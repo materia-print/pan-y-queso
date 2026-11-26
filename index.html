@@ -32,7 +32,7 @@ textarea,input,select{width:100%;font:inherit;color:inherit;background:var(--bg)
 textarea{min-height:120px;resize:vertical}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cap{display:flex;flex-direction:column;gap:4px}
-.cap.a label{color:var(--a)} .cap.b label{color:var(--b)}
+.cap.a label,.cap.b label{color:var(--ink)}
 .grp{display:flex;flex-direction:column;gap:4px}
 .grp label{display:flex;justify-content:space-between}
 .grp label span{color:var(--muted);font-weight:500}
@@ -63,7 +63,7 @@ textarea{min-height:120px;resize:vertical}
 .team h3{font-size:14px;opacity:.8;margin-top:8px;letter-spacing:.06em}
 .team ul{margin:2px 0 0;padding:0;list-style:none;font-weight:600}
 .team li{padding:1px 0;overflow-wrap:anywhere}
-.turn{position:relative;margin-top:12px;background:rgba(0,0,0,.28);border-radius:8px;padding:8px 10px;font-weight:600;text-align:center}
+.turn{position:relative;z-index:1;margin-top:12px;background:rgba(0,0,0,.28);border-radius:8px;padding:8px 10px;font-weight:600;text-align:center}
 .turn b{font-family:var(--f-display);font-size:22px;letter-spacing:.03em}
 .turn small{display:block;font-weight:500;opacity:.9}
 .steps{display:flex;gap:6px;flex-wrap:wrap}
@@ -76,36 +76,103 @@ textarea{min-height:120px;resize:vertical}
 .pl:disabled{cursor:default;opacity:.55}
 .bar{display:flex;gap:8px;flex-wrap:wrap}
 .coin{font-family:var(--f-display);font-size:26px;text-align:center;padding:4px 0}
-/* auspiciante y pie */
-.spon{display:flex;align-items:center;gap:12px;text-decoration:none;border-style:dashed}
-.spon img{width:52px;height:52px;object-fit:contain;border-radius:8px;flex:0 0 auto}
-.spon small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.spon strong{display:block}
-.spon span{color:var(--muted);font-size:14px}
-footer{text-align:center;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:8px;align-items:center;padding-top:8px;border-top:1px solid var(--line)}
-footer strong{color:var(--ink)}
+/* ===== look futbolero ===== */
+:root{--gol:#ffd23f;--noche:#0e2a17;--del:#e8590c;--med:#2f9e44;--def:#1c64c4}
+/* fondos: se elige con FONDO en la configuración ("pasto" o "estadio") */
+body.f-pasto{background:repeating-linear-gradient(45deg,#3f9450 0 40px,#378847 40px 80px) fixed}
+body.f-estadio{background:radial-gradient(ellipse at 50% 115%,#1f6b35 0%,#0e2a17 45%,#07121f 100%) fixed}
+body.f-estadio::before,body.f-estadio::after{content:"";position:fixed;top:-60px;width:260px;height:420px;background:linear-gradient(180deg,rgba(255,255,220,.28),transparent);filter:blur(8px);pointer-events:none;z-index:0}
+body.f-estadio::before{left:-110px;transform:rotate(-28deg)} body.f-estadio::after{right:-110px;transform:rotate(28deg)}
+.wrap{position:relative;z-index:1}
+body.f-pasto footer,body.f-estadio footer{color:rgba(255,255,255,.85)}
+body.f-pasto footer a,body.f-estadio footer a{color:var(--gol)}
+body.f-pasto .bar .btn.ghost,body.f-estadio .bar .btn.ghost{background:var(--card)}
+/* encabezado = marcador del estadio, con los colores de cada equipo */
+.hero{background:#111;border:3px solid #2a2a2a;border-radius:14px;padding:14px;color:#fff;box-shadow:0 6px 0 #000,0 10px 24px rgba(0,0,0,.3)}
+.tab{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px}
+.eq{font:800 30px/1.15 var(--f-display);padding:4px 4px!important;letter-spacing:.02em!important;text-transform:uppercase;letter-spacing:.04em;text-align:center;border-radius:6px;padding:4px 6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .25s,color .25s}
+.eq.ea{background:var(--a);color:var(--a-ink,#fff)} .eq.eb{background:var(--b);color:var(--b-ink,#fff)}
+.sc{font:800 44px/1 var(--f-display);color:var(--gol);text-shadow:0 0 10px rgba(255,210,63,.6);letter-spacing:.05em;font-variant-numeric:tabular-nums}
+.hero .sub{text-align:center;color:var(--gol);font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;margin:10px 0 0}
+.hero .live{display:flex;justify-content:center;color:#fff;margin-top:6px}
+/* camisetas: paleta de colores por equipo */
+.camis{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.camis button{width:28px;height:28px;border-radius:7px 7px 10px 10px;border:2px solid rgba(0,0,0,.18);background:var(--sw);cursor:pointer;padding:0}
+.camis button[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
+.camis .otro{position:relative;width:28px;height:28px;border-radius:7px 7px 10px 10px;border:2px solid rgba(0,0,0,.18);cursor:pointer;overflow:hidden;
+  background:conic-gradient(red,#ff0,lime,cyan,blue,#f0f,red)}
+.camis .otro[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
+.camis .otro input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0}
+.camis .otro:focus-within{outline:3px solid var(--gol);outline-offset:2px}
+.camis button:focus-visible{outline:3px solid var(--gol);outline-offset:2px}
+.paso{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-size:22px;text-transform:uppercase;letter-spacing:.03em}
+.paso i{font-style:normal;background:var(--noche);color:var(--gol);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:17px}
+.cap input{border-width:2px;font-weight:600}
+.cap.a input{border-color:color-mix(in srgb,var(--a) 55%,var(--line));border-top:6px solid var(--a)}
+.cap.b input{border-color:color-mix(in srgb,var(--b) 55%,var(--line));border-top:6px solid var(--b)}
+.grp{border-left:6px solid var(--c);border-radius:10px;padding:10px 10px 10px 12px;background:color-mix(in srgb,var(--c) 7%,var(--card))}
+.grp label{align-items:center;gap:8px;justify-content:flex-start;font-size:15px}
+.grp label span:last-child{margin-left:auto}
+.grp .num{font-family:var(--f-display);font-size:18px;width:30px;height:30px;border-radius:8px 8px 12px 12px;background:var(--c);color:#fff;display:grid;place-items:center;flex:0 0 auto}
+.grp textarea{background:var(--card);border-color:color-mix(in srgb,var(--c) 30%,var(--line))}
+.grp.arq{--c:#7b3fbf} .grp.del{--c:var(--del)} .grp.med{--c:var(--med)} .grp.def{--c:var(--def)}
+#go{background:var(--gol);color:var(--noche);font-family:var(--f-display);font-size:24px;text-transform:uppercase;letter-spacing:.04em;padding:12px 16px;box-shadow:0 4px 0 #c9a21d}
+#go:active{transform:translateY(2px);box-shadow:0 2px 0 #c9a21d}
+.step.on{background:var(--noche);border-color:var(--noche);color:var(--gol)}
+/* auspiciantes: carteles de costado de cancha */
+.tablero{--bc:var(--noche);--tc:#fff;background:var(--bc);color:var(--tc);border-radius:10px;padding:10px 14px;text-decoration:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px;border-bottom:3px solid rgba(0,0,0,.25)}
+.tablero strong{font-family:var(--f-display);font-size:20px;text-transform:uppercase;letter-spacing:.03em;line-height:1}
+.tablero span{font-size:12px;opacity:.9}
+.tablero img{max-width:100%;max-height:56px;object-fit:contain}
+a.tablero:hover{filter:brightness(1.08)}
+.ticker{overflow:hidden;border-radius:12px;background:var(--noche);padding:6px;margin-top:-4px}
+.track{display:flex;gap:6px;width:max-content;animation:correr 28s linear infinite}
+.ticker .tablero{flex:0 0 auto;min-width:170px;padding:8px 12px}
+.ticker:hover .track{animation-play-state:paused}
+@keyframes correr{to{transform:translateX(calc(-50% - 3px))}}
+@media (prefers-reduced-motion:reduce){.track{animation:none}.ticker{overflow-x:auto}}
+.lado{display:none}
+@media (min-width:1000px){
+  .lado{display:flex;flex-direction:column;justify-content:center;gap:14px;position:fixed;top:24px;bottom:24px;width:min(200px,calc((100vw - 560px)/2 - 48px))}
+  .izq{left:24px} .der{right:24px}
+  .lado .tablero{padding:22px 14px;min-height:120px;transform:perspective(500px) rotateY(var(--ry));box-shadow:0 6px 14px rgba(0,0,0,.18)}
+  .izq .tablero{--ry:8deg} .der .tablero{--ry:-8deg}
+  .lado .tablero strong{font-size:26px}
+  .ticker{display:none}
+}
+/* footer simple */
+footer{text-align:center;color:var(--muted);font-size:14px;padding:6px 0 0;border:0;display:block}
+footer a{color:var(--pitch);font-weight:700}
+@media (prefers-color-scheme:dark){footer a{color:var(--gol)}}
+@media (prefers-color-scheme:dark){:root{--noche:#07170c}.grp{background:color-mix(in srgb,var(--c) 12%,var(--card))}}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;max-width:calc(100% - 32px);z-index:9}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header style="display:flex;flex-direction:column;gap:6px">
-    <h1>Pan y Queso</h1>
-    <p class="sub">Se elige por posición: primero delanteros, después medios y al final defensores. Los dos capitanes lo ven en vivo.</p>
+  <header class="hero">
+    <h1 class="tab" aria-label="Pan y Queso"><span class="eq ea" id="hA">Pan</span><span class="sc" id="sc">0:0</span><span class="eq eb" id="hB">Queso</span></h1>
+    <p class="sub">Armá los equipos por posición · en vivo desde dos celulares</p>
     <span class="live off" id="live" hidden><i></i><span id="liveTxt"></span></span>
   </header>
+  <div class="ticker" id="ticker" aria-label="Auspiciantes"><div class="track" id="track"></div></div>
   <p class="note" id="aviso" hidden></p>
 
   <!-- PASO 1: lista -->
   <section class="card" id="setup" hidden>
+    <div class="paso"><i>1</i>Capitanes</div>
     <div class="row">
-      <div class="cap a"><label for="capA">Capitán 1</label><input id="capA" placeholder="Nombre" autocomplete="off"></div>
-      <div class="cap b"><label for="capB">Capitán 2</label><input id="capB" placeholder="Nombre" autocomplete="off"></div>
+      <div class="cap a"><label for="capA">Capitán 1</label><input id="capA" placeholder="Nombre" autocomplete="off"><div class="camis" id="camA" role="group" aria-label="Color del equipo 1"></div></div>
+      <div class="cap b"><label for="capB">Capitán 2</label><input id="capB" placeholder="Nombre" autocomplete="off"><div class="camis" id="camB" role="group" aria-label="Color del equipo 2"></div></div>
     </div>
-    <p class="muted" style="margin:0;font-size:14px">Un jugador por línea. Si un capitán está en la lista, se saca solo.</p>
-    <div class="grp"><label for="g0">Delanteros <span id="n0"></span></label><textarea id="g0"></textarea></div>
-    <div class="grp"><label for="g1">Mediocampistas <span id="n1"></span></label><textarea id="g1"></textarea></div>
-    <div class="grp"><label for="g2">Defensores <span id="n2"></span></label><textarea id="g2"></textarea></div>
+    <div class="paso" style="margin-top:6px"><i>2</i>Jugadores</div>
+    <p class="muted" style="margin:0;font-size:14px">Uno por línea. Si un capitán está en la lista, se saca solo.</p>
+    <div class="grp arq"><label for="g0">Arqueros <small class="muted" style="font-weight:500">(opcional)</small><span id="n0"></span></label><textarea id="g0" style="min-height:64px" placeholder="Si no hay, dejalo vacío"></textarea></div>
+    <div class="grp del"><label for="g1">Delanteros <span id="n1"></span></label><textarea id="g1"></textarea></div>
+    <div class="grp med"><label for="g2">Mediocampistas <span id="n2"></span></label><textarea id="g2"></textarea></div>
+    <div class="grp def"><label for="g3">Defensores <span id="n3"></span></label><textarea id="g3"></textarea></div>
     <p class="err" id="err"></p>
     <button class="btn" id="go" type="button">Crear partido</button>
     <p class="muted" style="margin:0;font-size:14px">Después le mandás el link al otro capitán y, cuando entra, tiran la moneda.</p>
@@ -153,18 +220,11 @@ footer strong{color:var(--ink)}
     </div>
   </section>
 
-  <!-- Auspiciante: se completa en AUSPICIANTE, más abajo -->
-  <a class="card spon" id="spon" target="_blank" rel="noopener">
-    <img id="sponImg" alt="" hidden>
-    <div><small>Auspicia</small><strong id="sponNom"></strong><span id="sponTxt"></span></div>
-  </a>
-
-  <footer>
-    <div>Hecho por <strong>Materia Print</strong> · Páginas web, turneros y diseño para tu negocio</div>
-    <a class="btn wa small" href="https://wa.me/5493543626280?text=Hola!%20Vi%20el%20Pan%20y%20Queso%20y%20quiero%20consultar" target="_blank" rel="noopener">Quiero una página para mi negocio</a>
-    <a href="https://materia-print.com.ar" target="_blank" rel="noopener">materia-print.com.ar</a>
-  </footer>
+  <footer>Desarrollado por <a href="https://materia-print.com.ar" target="_blank" rel="noopener">materia-print</a></footer>
 </div>
+<!-- Auspiciantes: en compu a los costados, en celular como cartel que corre bajo el título -->
+<aside class="lado izq" id="ladoI" aria-label="Auspiciantes"></aside>
+<aside class="lado der" id="ladoD" aria-label="Auspiciantes"></aside>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -173,18 +233,27 @@ footer strong{color:var(--ink)}
    Si quedan los valores de ejemplo, la página funciona igual pero solo en un celular. */
 const SUPABASE_URL = "https://vxmijowqzvxiztrspdrz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_mksDMdzuFJwAPeLM5Gyovw_g5knnWON";
-/* Auspiciante: cambiá estos datos cuando tengas uno. logo puede ser "logo-auspiciante.png" subido al repo. */
-const AUSPICIANTE = {
-  nombre: "¿Tu negocio acá?",
-  texto:  "Lo ven todos los que arman su partido. Escribinos.",
-  link:   "https://wa.me/5493543626280?text=Hola!%20Quiero%20auspiciar%20el%20Pan%20y%20Queso",
-  logo:   ""
-};
+/* Auspiciantes: estos son de EJEMPLO (inventados). Reemplazalos por los reales cuando los tengas.
+   logo: archivo subido al repo (ej. "logos/la-tribuna.png"); si está vacío se muestra el nombre con sus colores.
+   lado: "izq" o "der" (en compu). En celular salen todos en el cartel que corre. */
+const AUSPICIANTES = [
+  {nombre:"Cervecería La Tribuna", texto:"La del tercer tiempo",   fondo:"#7a1712", letra:"#ffd23f", link:"", logo:"", lado:"izq"},
+  {nombre:"Canchas El Potrero",    texto:"Fútbol 5 y 7 · Reservá", fondo:"#1f6b35", letra:"#ffffff", link:"", logo:"", lado:"izq"},
+  {nombre:"Pizzería Tercer Tiempo",texto:"Pedí después del partido",fondo:"#e8590c", letra:"#ffffff", link:"", logo:"", lado:"izq"},
+  {nombre:"Deportes Gol",          texto:"Botines y camisetas",     fondo:"#123f8c", letra:"#ffffff", link:"", logo:"", lado:"der"},
+  {nombre:"Bebidas Don Pepe",      texto:"Siempre bien frías",      fondo:"#111111", letra:"#7ee0ff", link:"", logo:"", lado:"der"},
+  {nombre:"¿Tu marca acá?",        texto:"Escribinos",              fondo:"#ffd23f", letra:"#0e2a17", link:"https://wa.me/5493543626280?text=Hola!%20Quiero%20auspiciar%20el%20Pan%20y%20Queso", logo:"", lado:"der"}
+];
+/* Fondo de la página: "pasto" (pasto cortado en diagonal) o "estadio" (de noche con reflectores). */
+const FONDO = "pasto";
+/* Colores de camiseta que se pueden elegir para cada equipo. */
+const CAMISETAS = [["Rojo","#d9422b","🔴"],["Azul","#1f5fbf","🔵"],["Blanco","#f2f2f2","⚪"],["Negro","#1b1b1b","⚫"],["Verde","#2f9e44","🟢"],
+                   ["Amarillo","#ffd23f","🟡"],["Naranja","#f08c00","🟠"],["Celeste","#5bb8f0","🔵"],["Violeta","#7b3fbf","🟣"],["Bordó","#7a1730","🟤"]];
 const URL_PUBLICA = location.origin + location.pathname;
 /* ========================== */
 
 const $=id=>document.getElementById(id);
-const GR=["Delanteros","Mediocampistas","Defensores"], GS=["DEL","MED","DEF"];
+const GR=["Arqueros","Delanteros","Mediocampistas","Defensores"], GS=["ARQ","DEL","MED","DEF"];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=o=>JSON.parse(JSON.stringify(o));
 const lk=k=>{try{return localStorage.getItem(k)}catch(e){return null}}, ls=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
@@ -193,16 +262,64 @@ function toast(t){$("toast").textContent=t;$("toast").hidden=false;clearTimeout(
 const online=!SUPABASE_KEY.includes("PEGAR-ACA") && window.supabase;
 const sb=online?supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false}}):null;
 let st=null, code=null, busy=false, canal=null, poll=null;
+document.body.classList.add("f-"+(FONDO==="estadio"?"estadio":"pasto"));
 
-/* ---------- auspiciante ---------- */
-(()=>{ const a=AUSPICIANTE; $("sponNom").textContent=a.nombre; $("sponTxt").textContent=" "+a.texto;
-  if(/^https:\/\//.test(a.link)) $("spon").href=a.link; else $("spon").removeAttribute("href");
-  if(a.logo){ $("sponImg").src=a.logo; $("sponImg").hidden=false; } })();
+/* ---------- colores de cada equipo ---------- */
+const DEF_COL=["#d9422b","#1f5fbf"];
+const hexOk=c=>/^#[0-9a-f]{6}$/i.test(c||"");
+const colDe=(s,i)=>hexOk(s&&s.colores&&s.colores[i])?s.colores[i]:DEF_COL[i];
+function inkFor(h){ const n=[1,3,5].map(k=>parseInt(h.substr(k,2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));
+  return (.2126*n[0]+.7152*n[1]+.0722*n[2])>.4?"#111":"#fff"; }
+function aplicarColores(c){ const r=document.documentElement.style;
+  ["a","b"].forEach((k,i)=>{ const v=hexOk(c[i])?c[i]:DEF_COL[i]; r.setProperty("--"+k,v); r.setProperty("--"+k+"-ink",inkFor(v)); }); }
+const rgb=h=>[1,3,5].map(k=>parseInt(h.substr(k,2),16));
+const emojiDe=h=>{ const c=rgb(h); let best=CAMISETAS[0],d=1e9;            // el emoji del color más parecido
+  CAMISETAS.forEach(x=>{ const q=rgb(x[1]), dd=(c[0]-q[0])**2+(c[1]-q[1])**2+(c[2]-q[2])**2; if(dd<d){d=dd;best=x;} }); return best[2]; };
+let colSetup=(()=>{ try{ const p=JSON.parse(lk("pyq_lista")||"null"); if(p&&p.c&&hexOk(p.c[0])&&hexOk(p.c[1])) return p.c; }catch(e){} return [...DEF_COL]; })();
+function pintarCamis(){
+  [0,1].forEach(i=>{ $(i?"camB":"camA").innerHTML=CAMISETAS.map(([n,h])=>
+    `<button type="button" style="--sw:${h}" data-i="${i}" data-c="${h}" aria-label="${n}" title="${n}" aria-pressed="${colSetup[i]===h}"></button>`).join("")
+    + `<label class="otro" title="Otro color" aria-pressed="${!CAMISETAS.some(x=>x[1]===colSetup[i])}"><input type="color" data-i="${i}" value="${colSetup[i]}" aria-label="Elegir otro color"></label>`; });
+  aplicarColores(colSetup);
+}
+function ajustar(){ ["hA","hB"].forEach(id=>{ const el=$(id); let f=30; el.style.fontSize=f+"px";
+  while(el.scrollWidth>el.clientWidth&&f>14){ f--; el.style.fontSize=f+"px"; } }); }
+addEventListener("resize",ajustar);
+function marcadorSetup(){ $("hA").textContent=$("capA").value.trim()||"Pan"; $("hB").textContent=$("capB").value.trim()||"Queso"; $("sc").textContent="0:0"; ajustar(); }
+["camA","camB"].forEach(id=>$(id).addEventListener("click",e=>{
+  const b=e.target.closest("button[data-c]"); if(!b) return;
+  const i=+b.dataset.i, c=b.dataset.c, otro=1-i;
+  if(colSetup[otro]===c) colSetup[otro]=colSetup[i];   // si elige el color del otro, se los cambian
+  colSetup[i]=c; pintarCamis();
+}));
+["capA","capB"].forEach(id=>$(id).addEventListener("input",marcadorSetup));
+/* selector libre: mientras se arrastra solo se pinta (no se redibuja, para no cerrar la rueda) */
+["camA","camB"].forEach(id=>{
+  $(id).addEventListener("input",e=>{ if(e.target.type!=="color") return; colSetup[+e.target.dataset.i]=e.target.value.toLowerCase(); aplicarColores(colSetup); });
+  $(id).addEventListener("change",e=>{ if(e.target.type==="color") pintarCamis(); });
+});
+
+/* ---------- auspiciantes ---------- */
+(()=>{
+  const col=c=>/^#[0-9a-f]{3,8}$/i.test(c||"")?c:"";
+  const tablero=a=>{
+    const el=document.createElement(/^https:\/\//.test(a.link)?"a":"div");
+    el.className="tablero"; if(el.tagName==="A"){ el.href=a.link; el.target="_blank"; el.rel="noopener"; }
+    if(col(a.fondo)) el.style.setProperty("--bc",a.fondo); if(col(a.letra)) el.style.setProperty("--tc",a.letra);
+    if(a.logo){ const i=document.createElement("img"); i.src=a.logo; i.alt=a.nombre; el.appendChild(i); }
+    else { const n=document.createElement("strong"); n.textContent=a.nombre; el.appendChild(n); }
+    if(a.texto){ const t=document.createElement("span"); t.textContent=a.texto; el.appendChild(t); }
+    return el;
+  };
+  AUSPICIANTES.forEach(a=>$(a.lado==="der"?"ladoD":"ladoI").appendChild(tablero(a)));
+  const tr=$("track"); [0,1].forEach(k=>AUSPICIANTES.forEach(a=>{ const el=tablero(a); if(k) el.setAttribute("aria-hidden","true"); tr.appendChild(el); }));
+  if(!AUSPICIANTES.length) $("ticker").hidden=true;
+})();
 
 /* ---------- turnos ----------
    Grupo por grupo. Dentro del grupo se alterna. El grupo siguiente lo arranca el equipo con menos
    jugadores; si están parejos, el que eligió segundo en el grupo anterior. */
-function curGroup(s){ for(let g=0;g<3;g++) if(s.pool[g].length) return g; return -1; }
+function curGroup(s){ for(let g=0;g<4;g++) if(s.pool[g].length) return g; return -1; }
 function turnNow(s){
   const g=curGroup(s); if(g<0) return -1;
   let count=[0,0], starter=s.first, prev=null;
@@ -253,17 +370,22 @@ async function commit(next){
 
 /* ---------- pantallas ---------- */
 function parse(i){ const seen=new Set(); return $("g"+i).value.split(/\n|,/).map(x=>x.trim()).filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase())); }
-function counts(){ [0,1,2].forEach(i=>$("n"+i).textContent=parse(i).length+" jugadores"); }
-["g0","g1","g2"].forEach(id=>$(id).addEventListener("input",counts));
+function counts(){ [0,1,2,3].forEach(i=>{ const k=parse(i).length; $("n"+i).textContent=(i===0&&!k)?"":k+(k===1?" jugador":" jugadores"); }); }
+["g0","g1","g2","g3"].forEach(id=>$(id).addEventListener("input",counts));
 function showSetup(){
   $("setup").hidden=false; $("draft").hidden=true;
   const p=JSON.parse(lk("pyq_lista")||"null");
-  if(p&&!$("g0").dataset.init){ $("capA").value=p.a||""; $("capB").value=p.b||""; (p.g||[]).forEach((t,i)=>$("g"+i).value=t); }
-  $("g0").dataset.init=1; counts();
+  if(p&&!$("g0").dataset.init){ $("capA").value=p.a||""; $("capB").value=p.b||""; (p.g&&p.g.length===3?["",...p.g]:(p.g||[])).forEach((t,i)=>$("g"+i).value=t); }
+  $("g0").dataset.init=1; counts(); pintarCamis(); marcadorSetup();
 }
+function norm(s){ if(s&&s.pool&&s.pool.length===3){ s.pool.unshift([]); (s.picks||[]).forEach(p=>p.g++); } return s; }
 function render(){
+  st=norm(st);
   if(!st||(st.fase!=="draft"&&st.fase!=="sala")){ showSetup(); return; }
   $("setup").hidden=true; $("draft").hidden=false;
+  aplicarColores([colDe(st,0),colDe(st,1)]);
+  $("hA").textContent=st.caps[0]; $("hB").textContent=st.caps[1]; ajustar();
+  $("sc").textContent=st.fase==="sala"?"0:0":`${st.picks.filter(p=>!p.t).length+1}:${st.picks.filter(p=>p.t).length+1}`;
   const enSala=st.fase==="sala";
   ["cancha","yoBox","poolBox","acciones"].forEach(id=>$(id).hidden=enSala);
   $("sala").hidden=!enSala;
@@ -274,21 +396,21 @@ function render(){
   $("nA").textContent=st.caps[0]; $("nB").textContent=st.caps[1];
   [0,1].forEach(t=>{
     const mine=st.picks.filter(p=>p.t===t);
-    $(t?"tB":"tA").innerHTML=[0,1,2].map(g=>{ const ns=mine.filter(p=>p.g===g); return ns.length?`<h3>${GS[g]}</h3><ul>${ns.map(p=>`<li>${esc(p.n)}</li>`).join("")}</ul>`:""; }).join("");
+    $(t?"tB":"tA").innerHTML=[0,1,2,3].map(g=>{ const ns=mine.filter(p=>p.g===g); return ns.length?`<h3>${GS[g]}</h3><ul>${ns.map(p=>`<li>${esc(p.n)}</li>`).join("")}</ul>`:""; }).join("");
     $(t?"cB":"cA").textContent=`${mine.length+1} con el capitán`;
   });
   const yoKey="pyq_yo_"+(code||"local"), yo=lk(yoKey)||(code&&!lk("pyq_creado_"+code)?"mirar":"ambos"), sel=$("yo");
   sel.innerHTML=`<option value="ambos">Elijo por los dos</option><option value="0">${esc(st.caps[0])}</option><option value="1">${esc(st.caps[1])}</option><option value="mirar">Solo miro</option>`;
   sel.value=yo; sel.dataset.key=yoKey;
   const g=curGroup(st), t=turnNow(st);
-  $("steps").innerHTML=GR.map((n,i)=>`<span class="step ${i===g?"on":""} ${!st.pool[i].length&&i!==g?"done":""}">${n} · ${st.pool[i].length}</span>`).join("");
+  $("steps").innerHTML=GR.map((n,i)=>!(st.pool[i].length||st.picks.some(p=>p.g===i))?"":`<span class="step ${i===g?"on":""} ${!st.pool[i].length&&i!==g?"done":""}">${n} · ${st.pool[i].length}</span>`).join("");
   if(g<0){
     $("turn").textContent=`Equipos listos · ${st.picks.filter(p=>!p.t).length+1} vs ${st.picks.filter(p=>p.t).length+1}`;
-    $("turn").style.background="rgba(0,0,0,.35)";
+    $("turn").style.background="rgba(0,0,0,.35)"; $("turn").style.color="#fff";
     $("poolTit").textContent="No queda nadie"; $("grid").innerHTML=""; $("wait").hidden=true;
   } else {
     $("turn").innerHTML=`<small>${GR[g]}</small>Elige <b>${esc(st.caps[t])}</b>`;
-    $("turn").style.background=t?"color-mix(in srgb,var(--b) 75%,transparent)":"color-mix(in srgb,var(--a) 75%,transparent)";
+    $("turn").style.background=t?"var(--b)":"var(--a)"; $("turn").style.color=t?"var(--b-ink)":"var(--a-ink)";
     $("poolTit").textContent=`${GR[g]}: quedan ${st.pool[g].length}`;
     const puedo=!busy&&(yo==="ambos"||+yo===t);
     $("grid").innerHTML=st.pool[g].map((n,i)=>`<button class="pl" type="button" data-i="${i}" ${puedo?"":"disabled"}>${esc(n)}</button>`).join("");
@@ -306,7 +428,7 @@ function renderSala(){
   if(code){ $("code").textContent=code;
     $("share").href="https://wa.me/?text="+encodeURIComponent(`⚽ Armemos los equipos: ${URL_PUBLICA}#${code}`); }
   const yo=lk(yoKey())||"", pres=st.presentes||[false,false];
-  $("quien").innerHTML=[0,1].map(i=>`<button class="btn ${yo===String(i)?"":"ghost"}" type="button" data-yo="${i}" style="${yo===String(i)?`background:var(--${i?"b":"a"})`:""}">${esc(st.caps[i])}</button>`).join("");
+  $("quien").innerHTML=[0,1].map(i=>`<button class="btn ${yo===String(i)?"":"ghost"}" type="button" data-yo="${i}" style="${yo===String(i)?`background:var(--${i?"b":"a"});color:var(--${i?"b":"a"}-ink)`:""}">${esc(st.caps[i])}</button>`).join("");
   $("soloMiro").className="btn small "+(yo==="mirar"?"":"ghost");
   $("presentes").innerHTML=[0,1].map(i=>pres[i]?`<span>✅ ${esc(st.caps[i])} está listo</span>`:`<span class="muted">⏳ Esperando a ${esc(st.caps[i])}${code?" · mandale el link":""}</span>`).join("");
   const soyCap=yo==="0"||yo==="1", ambos=pres[0]&&pres[1];
@@ -328,11 +450,11 @@ $("monedaIgual").onclick=()=>{ ls(yoKey(),"ambos"); tirar(); };
 $("go").onclick=async()=>{
   const capA=$("capA").value.trim()||"Capitán 1", capB=$("capB").value.trim()||"Capitán 2";
   const out=new Set([capA.toLowerCase(),capB.toLowerCase()]);
-  const pool=[0,1,2].map(i=>parse(i).filter(n=>!out.has(n.toLowerCase())));
+  const pool=[0,1,2,3].map(i=>parse(i).filter(n=>!out.has(n.toLowerCase())));
   if(pool.flat().length<2){ $("err").textContent="Cargá al menos dos jugadores."; return; }
   $("err").textContent="";
-  ls("pyq_lista",JSON.stringify({a:capA,b:capB,g:[0,1,2].map(i=>$("g"+i).value)}));
-  const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:[true,false],v:1};
+  ls("pyq_lista",JSON.stringify({a:capA,b:capB,c:colSetup,g:[0,1,2,3].map(i=>$("g"+i).value)}));
+  const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],colores:[...colSetup],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:[true,false],v:1};
   if(sb){
     $("go").disabled=true;
     try{ code=await rpc("pyq_crear",{p_estado:nuevo}); ls("pyq_creado_"+code,"1"); ls("pyq_yo_"+code,"0"); history.replaceState(null,"","#"+code); st=nuevo; conectar(); }
@@ -357,9 +479,9 @@ function armar(id,txt){ const b=$(id); if(b.dataset.arm){ delete b.dataset.arm; 
   b.dataset.arm=1; b.textContent="¿Seguro? Tocá de nuevo"; setTimeout(()=>{delete b.dataset.arm;b.textContent=txt;},3000); return false; }
 $("yo").onchange=e=>{ ls(e.target.dataset.key,e.target.value); render(); };
 $("copy").onclick=()=>{
-  const team=t=>[0,1,2].map(g=>st.picks.filter(p=>p.t===t&&p.g===g).map(p=>`- ${p.n} (${GS[g]})`).join("\n")).filter(Boolean).join("\n");
+  const team=t=>[0,1,2,3].map(g=>st.picks.filter(p=>p.t===t&&p.g===g).map(p=>`- ${p.n} (${GS[g]})`).join("\n")).filter(Boolean).join("\n");
   const rest=st.pool.flat();
-  const txt=`⚽ Equipos\n\n🔴 ${st.caps[0]} (cap.)\n${team(0)}\n\n🔵 ${st.caps[1]} (cap.)\n${team(1)}${rest.length?`\n\nSin elegir: ${rest.join(", ")}`:""}\n\nArmados con Pan y Queso de Materia Print 👉 ${URL_PUBLICA}`;
+  const txt=`⚽ Equipos\n\n${emojiDe(colDe(st,0))} ${st.caps[0]} (cap.)\n${team(0)}\n\n${emojiDe(colDe(st,1))} ${st.caps[1]} (cap.)\n${team(1)}${rest.length?`\n\nSin elegir: ${rest.join(", ")}`:""}\n\nArmados con Pan y Queso de Materia Print 👉 ${URL_PUBLICA}`;
   const fb=()=>{ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");toast("Copiado.");}catch(e){toast("Seleccioná y copiá a mano.");} ta.remove(); };
   try{ navigator.clipboard.writeText(txt).then(()=>toast("Copiado. Pegalo en el grupo."),fb); }catch(e){ fb(); }
 };
