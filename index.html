@@ -118,9 +118,9 @@ body.f-pasto .bar .btn.ghost,body.f-estadio .bar .btn.ghost{background:var(--car
 .rol{font-weight:700;font-size:14px;padding:6px 10px;border-radius:99px;background:var(--bg);border:1px solid var(--line)}
 .paso{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-size:22px;text-transform:uppercase;letter-spacing:.03em}
 .paso i{font-style:normal;background:var(--noche);color:var(--gol);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:17px}
-.cap input{border-width:2px;font-weight:600}
-.cap.a input{border-color:color-mix(in srgb,var(--a) 55%,var(--line));border-top:6px solid var(--a)}
-.cap.b input{border-color:color-mix(in srgb,var(--b) 55%,var(--line));border-top:6px solid var(--b)}
+.cap select{border-width:2px;font-weight:600;min-width:0}
+.cap.a select{border-color:color-mix(in srgb,var(--a) 55%,var(--line));border-top:6px solid var(--a)}
+.cap.b select{border-color:color-mix(in srgb,var(--b) 55%,var(--line));border-top:6px solid var(--b)}
 .grp{border-left:6px solid var(--c);border-radius:10px;padding:10px 10px 10px 12px;background:color-mix(in srgb,var(--c) 7%,var(--card))}
 .grp label{align-items:center;gap:8px;justify-content:flex-start;font-size:15px}
 .grp label span:last-child{margin-left:auto}
@@ -175,15 +175,8 @@ footer a{color:var(--pitch);font-weight:700}
 
   <!-- PASO 1: lista -->
   <section class="card" id="setup" hidden>
-    <div class="paso"><i>1</i>Capitanes</div>
-    <div class="row">
-      <div class="cap a"><label for="capA">Capitán 1</label><input id="capA" placeholder="Nombre" autocomplete="off"><div class="camis" id="camA" role="group" aria-label="Color del equipo 1"></div></div>
-      <div class="cap b"><label for="capB">Capitán 2</label><input id="capB" placeholder="Nombre" autocomplete="off"><div class="camis" id="camB" role="group" aria-label="Color del equipo 2"></div></div>
-    </div>
-    <div class="cap"><label>Vos sos</label><div class="seg" id="soy" role="group" aria-label="Vos sos">
-      <button type="button" data-soy="0" id="soy0">Capitán 1</button><button type="button" data-soy="1" id="soy1">Capitán 2</button><button type="button" data-soy="ambos">Elijo por los dos</button></div></div>
-    <div class="paso" style="margin-top:6px"><i>2</i>Jugadores</div>
-    <p class="muted" style="margin:0;font-size:14px">Uno por línea. Si un capitán está en la lista, se saca solo.</p>
+    <div class="paso"><i>1</i>Jugadores</div>
+    <p class="muted" style="margin:0;font-size:14px">Uno por línea, <b>capitanes incluidos</b> (así se sabe en qué puesto juega cada uno).</p>
     <label class="chk"><input type="checkbox" id="chkPos" checked> Dividir por posición <span class="muted" id="posHint">(primero delanteros, después medios y defensores)</span></label>
     <div class="grp todos" id="boxTodos" hidden><label for="g0">Jugadores <span id="n0"></span></label><textarea id="g0" style="min-height:200px"></textarea></div>
     <div id="boxPos" style="display:flex;flex-direction:column;gap:10px">
@@ -193,6 +186,13 @@ footer a{color:var(--pitch);font-weight:700}
     </div>
     <label class="chk"><input type="checkbox" id="chkArq"> Hay arqueros <span class="muted">(se reparten al final)</span></label>
     <div class="grp arq" id="boxArq" hidden><label for="g4">Arqueros <span id="n4"></span></label><textarea id="g4" style="min-height:64px"></textarea></div>
+    <div class="paso" style="margin-top:6px"><i>2</i>Capitanes</div>
+    <div class="row">
+      <div class="cap a"><label for="capA">Capitán 1</label><select id="capA"></select><div class="camis" id="camA" role="group" aria-label="Color del equipo 1"></div></div>
+      <div class="cap b"><label for="capB">Capitán 2</label><select id="capB"></select><div class="camis" id="camB" role="group" aria-label="Color del equipo 2"></div></div>
+    </div>
+    <div class="cap"><label>Vos sos</label><div class="seg" id="soy" role="group" aria-label="Vos sos">
+      <button type="button" data-soy="0" id="soy0">Capitán 1</button><button type="button" data-soy="1" id="soy1">Capitán 2</button><button type="button" data-soy="ambos">Elijo por los dos</button></div></div>
     <p class="err" id="err"></p>
     <button class="btn" id="go" type="button">Crear partido</button>
     <p class="muted" style="margin:0;font-size:14px">Después le mandás el link al otro capitán y, cuando entra, tiran la moneda.</p>
@@ -317,7 +317,25 @@ function marcadorSetup(){ $("hA").textContent=$("capA").value.trim()||"Pan"; $("
   if(colSetup[otro]===c) colSetup[otro]=colSetup[i];   // si elige el color del otro, se los cambian
   colSetup[i]=c; popAbierto=-1; pintarCamis();
 }));
-["capA","capB"].forEach(id=>$(id).addEventListener("input",marcadorSetup));
+["capA","capB"].forEach(id=>$(id).addEventListener("change",()=>{ opcionesCap(); marcadorSetup(); }));
+/* combos de capitán: salen todos los jugadores cargados, agrupados por posición */
+let capPend=null;
+function opcionesCap(){
+  const pos=$("chkPos").checked, arq=$("chkArq").checked;
+  const grupos=[0,1,2,3,4].filter(i=>!((i===0&&pos)||(i>=1&&i<=3&&!pos)||(i===4&&!arq)));
+  const todos=new Set(); grupos.forEach(i=>parse(i).forEach(n=>todos.add(n)));
+  const prev=capPend||[$("capA").value,$("capB").value]; capPend=null;
+  const elegido=[0,1].map(k=>todos.has(prev[k])?prev[k]:"");
+  if(elegido[0]&&elegido[0]===elegido[1]) elegido[1]="";
+  ["capA","capB"].forEach((id,k)=>{
+    const otro=elegido[1-k];
+    $(id).innerHTML=`<option value="">Elegí…</option>`+grupos.map(i=>{ const ns=parse(i); if(!ns.length) return "";
+      const ops=ns.map(n=>`<option value="${esc(n)}" ${n===otro?"disabled":""}>${esc(n)}</option>`).join("");
+      return pos||i===4?`<optgroup label="${GR[i]}">${ops}</optgroup>`:ops; }).join("");
+    $(id).value=elegido[k];
+  });
+  marcadorSetup(); pintarSoy();
+}
 /* selector libre: mientras se arrastra solo se pinta (no se redibuja, para no cerrar la rueda) */
 ["camA","camB"].forEach(id=>{
   $(id).addEventListener("input",e=>{ if(e.target.type!=="color") return; colSetup[+e.target.dataset.i]=e.target.value.toLowerCase(); aplicarColores(colSetup); });
@@ -401,7 +419,7 @@ async function commit(next){
 
 /* ---------- pantallas ---------- */
 function parse(i){ const seen=new Set(); return $("g"+i).value.split(/\n|,/).map(x=>x.trim()).filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase())); }
-function counts(){ [0,1,2,3,4].forEach(i=>{ const k=parse(i).length; $("n"+i).textContent=k+(k===1?" jugador":" jugadores"); }); }
+function counts(){ [0,1,2,3,4].forEach(i=>{ const k=parse(i).length; $("n"+i).textContent=k+(k===1?" jugador":" jugadores"); }); clearTimeout(counts.h); counts.h=setTimeout(opcionesCap,250); }
 ["g0","g1","g2","g3","g4"].forEach(id=>$(id).addEventListener("input",counts));
 function vistaChecks(){ const pos=$("chkPos").checked; $("posHint").hidden=!pos; $("boxPos").hidden=!pos; $("boxTodos").hidden=pos; $("boxArq").hidden=!$("chkArq").checked; }
 $("chkPos").addEventListener("change",()=>{
@@ -409,14 +427,14 @@ $("chkPos").addEventListener("change",()=>{
   if(!$("chkPos").checked){ if(!$("g0").value.trim()) $("g0").value=[1,2,3].map(i=>$("g"+i).value.trim()).filter(Boolean).join("\n"); }
   else if(![1,2,3].some(i=>$("g"+i).value.trim())) $("g1").value=$("g0").value;
   vistaChecks(); counts(); });
-$("chkArq").addEventListener("change",vistaChecks);
+$("chkArq").addEventListener("change",()=>{ vistaChecks(); opcionesCap(); });
 function showSetup(){
   $("setup").hidden=false; $("draft").hidden=true;
   const p=JSON.parse(lk("pyq_lista")||"null");
-  if(p&&!$("g0").dataset.init){ $("capA").value=p.a||""; $("capB").value=p.b||""; let g=p.g||[]; if(g.length===3) g=["",...g,""]; else if(g.length===4) g=["",g[1],g[2],g[3],g[0]];   // formatos viejos
+  if(p&&!$("g0").dataset.init){ capPend=[p.a||"",p.b||""]; let g=p.g||[]; if(g.length===3) g=["",...g,""]; else if(g.length===4) g=["",g[1],g[2],g[3],g[0]];   // formatos viejos
     g.forEach((t,i)=>$("g"+i).value=t||""); $("chkPos").checked=p.pos!==false; $("chkArq").checked=!!p.arq||!!(g[4]||"").trim(); }
   vistaChecks();
-  $("g0").dataset.init=1; counts(); pintarCamis(); marcadorSetup(); pintarSoy();
+  $("g0").dataset.init=1; counts(); opcionesCap(); pintarCamis();
 }
 function norm(s){
   if(s&&s.pool&&s.pool.length===3){ s.pool=[[],...s.pool,[]]; (s.picks||[]).forEach(p=>p.g++); }
@@ -470,7 +488,7 @@ let soySetup="0";
 function pintarSoy(){ $("soy").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.soy===soySetup));
   $("soy0").textContent=$("capA").value.trim()||"Capitán 1"; $("soy1").textContent=$("capB").value.trim()||"Capitán 2"; }
 $("soy").addEventListener("click",e=>{ const b=e.target.closest("[data-soy]"); if(!b) return; soySetup=b.dataset.soy; pintarSoy(); });
-["capA","capB"].forEach(id=>$(id).addEventListener("input",pintarSoy));
+
 function pintarLinks(){
   $("codeBox").hidden=!code; if(!code) return;
   $("code").textContent=code;
@@ -498,7 +516,8 @@ $("monedaIgual").onclick=()=>{ ls(yoKey(),"ambos"); const n=clone(st); n.invitad
 
 /* ---------- acciones ---------- */
 $("go").onclick=async()=>{
-  const capA=$("capA").value.trim()||"Capitán 1", capB=$("capB").value.trim()||"Capitán 2";
+  const capA=$("capA").value, capB=$("capB").value;
+  if(!capA||!capB){ $("err").textContent="Elegí los dos capitanes."; $(capA?"capB":"capA").focus(); return; }
   const out=new Set([capA.toLowerCase(),capB.toLowerCase()]);
   const pos=$("chkPos").checked, arq=$("chkArq").checked;
   const usa=i=>!((i===0&&pos)||(i>=1&&i<=3&&!pos)||(i===4&&!arq));
