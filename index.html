@@ -289,6 +289,7 @@ function aplicarColores(c){ const r=document.documentElement.style;
 const rgb=h=>[1,3,5].map(k=>parseInt(h.substr(k,2),16));
 const emojiDe=h=>{ const c=rgb(h); let best=CAMISETAS[0],d=1e9;            // el emoji del color más parecido
   CAMISETAS.forEach(x=>{ const q=rgb(x[1]), dd=(c[0]-q[0])**2+(c[1]-q[1])**2+(c[2]-q[2])**2; if(dd<d){d=dd;best=x;} }); return best[2]; };
+try{ localStorage.removeItem("pyq_lista"); }catch(e){}   // la lista ya no se guarda: cada partido arranca vacío
 let colSetup=(()=>{ try{ const p=JSON.parse(lk("pyq_lista")||"null"); if(p&&p.c&&hexOk(p.c[0])&&hexOk(p.c[1])) return p.c; }catch(e){} return [...DEF_COL]; })();
 let popAbierto=-1;
 function pintarCamis(){
@@ -534,7 +535,6 @@ $("go").onclick=async()=>{
   const capPos=[capA,capB].map(c=>{ for(let i=0;i<5;i++) if(usa(i)&&parse(i).some(n=>n.toLowerCase()===c.toLowerCase())) return i; return null; });
   if(pool.flat().length<2){ $("err").textContent="Cargá al menos dos jugadores."; return; }
   $("err").textContent="";
-  ls("pyq_lista",JSON.stringify({a:capA,b:capB,c:colSetup,pos,arq,g:[0,1,2,3,4].map(i=>$("g"+i).value)}));
   const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],capPos,colores:[...colSetup],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:soySetup==="ambos"?[true,true]:[soySetup==="0",soySetup==="1"],
     invitado:soySetup==="ambos"?null:(soySetup==="0"?1:0),k:Math.random().toString(36).slice(2,8),
     ko:Math.random().toString(36).slice(2,8),rolCreador:soySetup,v:1};
