@@ -214,7 +214,7 @@ footer a{color:var(--pitch);font-weight:700}
   <!-- PASO 2: elección -->
   <section id="draft" hidden style="display:flex;flex-direction:column;gap:14px">
     <div class="card" id="codeBox" hidden>
-      <div class="code"><div><span class="muted" style="font-size:13px;font-weight:600">Código del partido</span><br><b id="code"></b></div><span class="rol" id="rolTxt"></span></div>
+      <div class="code"><div><span class="muted" style="font-size:13px;font-weight:600">Código del partido</span><br><b id="code"></b></div><div style="display:flex;gap:6px;align-items:center"><span class="rol" id="rolTxt"></span><button class="rol" id="sonido" type="button" title="Sonido" aria-label="Sonido" style="cursor:pointer"></button></div></div>
       <div class="bar">
         <a class="btn wa small" id="shareCap" target="_blank" rel="noopener"></a>
         <a class="btn ghost small" id="shareVer" target="_blank" rel="noopener">👀 Link para mirar</a>
@@ -277,7 +277,7 @@ const AUSPICIANTES = [
 const FONDO = "pasto";
 /* Colores de camiseta que se pueden elegir para cada equipo. */
 const CAMISETAS = [["Rojo","#d9422b","🔴"],["Azul","#1f5fbf","🔵"],["Blanco","#f2f2f2","⚪"],["Negro","#1b1b1b","⚫"],["Verde","#2f9e44","🟢"],
-                   ["Amarillo","#ffd23f","🟡"],["Naranja","#f08c00","🟠"],["Celeste","#5bb8f0","🔵"],["Violeta","#7b3fbf","🟣"],["Bordó","#7a1730","🟤"]];
+                   ["Amarillo","#ffd23f","🟡"],["Naranja","#f08c00","🟠"],["Celeste","#5bb8f0","🔵"],["Violeta","#7b3fbf","🟣"],["Bordó","#7a1730","🍷"]];
 const URL_PUBLICA = location.origin + location.pathname;
 /* ========================== */
 
@@ -404,6 +404,42 @@ const SING=["jugador","delantero","mediocampista","defensor","arquero"];
 /* jugadores de un equipo en una posición, con el capitán incluido en la suya */
 const deEquipo=(s,t,g)=>[...((s.capPos||[])[t]===g?[s.caps[t]+" (C)"]:[]),...s.picks.filter(p=>p.t===t&&p.g===g).map(p=>p.n)];
 
+/* ---------- avisos: silbato + vibración cuando te toca ---------- */
+let audio=null, sonidoOn=lk("pyq_sonido")!=="0";
+const tituloBase=document.title;
+function pintarSonido(){ $("sonido").textContent=sonidoOn?"🔊":"🔇"; $("sonido").setAttribute("aria-pressed",sonidoOn); }
+// los navegadores solo dejan sonar después de que la persona tocó algo en la página: se "despierta" al primer toque
+addEventListener("pointerdown",()=>{ try{ if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)(); if(audio.state==="suspended") audio.resume(); }catch(e){} },{passive:true});
+function tono(f,ini,dur,vol,vibrato){
+  if(!audio||!sonidoOn) return;
+  const t=audio.currentTime+ini, o=audio.createOscillator(), g=audio.createGain();
+  o.type="sine"; o.frequency.setValueAtTime(f,t);
+  if(vibrato){ const l=audio.createOscillator(), lg=audio.createGain(); l.frequency.value=28; lg.gain.value=f*.06; l.connect(lg).connect(o.frequency); l.start(t); l.stop(t+dur); }
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.02); g.gain.setValueAtTime(vol,t+dur-.05); g.gain.linearRampToValueAtTime(0,t+dur);
+  o.connect(g).connect(audio.destination); o.start(t); o.stop(t+dur+.02);
+}
+const silbato=()=>{ tono(2900,0,.18,.25,true); tono(2900,.26,.42,.25,true); };
+const tic=()=>tono(1200,0,.07,.12,false);
+const finalPitazo=()=>{ tono(2900,0,.25,.25,true); tono(2900,.35,.25,.25,true); tono(2900,.7,.7,.25,true); };
+function teToca(){
+  silbato(); try{ navigator.vibrate&&navigator.vibrate([180,80,180]); }catch(e){}
+  toast("⚽ ¡Te toca elegir!");
+  if(document.hidden) document.title="⚽ ¡Te toca! · "+tituloBase;
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) document.title=tituloBase; });
+/* llega un cambio del otro celular: se compara con lo anterior para saber si avisar */
+function recibir(d){
+  const antes=st; st=d; render();
+  if(!antes||st.fase!=="draft") return;
+  const r=miRol(), soyCap=r==="0"||r==="1";
+  const tAntes=antes.fase==="draft"?turnNow(norm(clone(antes))):-2, tAhora=turnNow(st);
+  if(tAhora<0&&tAntes>=0){ finalPitazo(); return; }                 // se terminó de elegir
+  if(soyCap&&tAhora===+r&&tAntes!==tAhora){ teToca(); return; }      // pasó a ser mi turno
+  if(!soyCap&&(st.picks||[]).length>(antes.picks||[]).length) tic(); // espectadores: un "tic" por cada elección
+}
+$("sonido").onclick=()=>{ sonidoOn=!sonidoOn; ls("pyq_sonido",sonidoOn?"1":"0"); pintarSonido(); if(sonidoOn) tic(); };
+pintarSonido();
+
 /* ---------- servidor ---------- */
 function setLive(on,txt){ $("live").hidden=false; $("live").classList.toggle("off",!on); $("liveTxt").textContent=txt; }
 function aviso(t){ $("aviso").textContent=t||""; $("aviso").hidden=!t; }
@@ -413,14 +449,14 @@ function conectar(){
   if(!sb||!code) return;
   if(canal) sb.removeChannel(canal);
   canal=sb.channel("pyq-"+code).on("broadcast",{event:"estado"},({payload})=>{
-    if(payload&&(!st||payload.v>st.v)&&!busy){ st=payload; render(); }
+    if(payload&&(!st||payload.v>st.v)&&!busy) recibir(payload);
   }).subscribe(s=>{ if(s==="SUBSCRIBED") setLive(true,"En vivo y en directo"); });
   clearInterval(poll);
   poll=setInterval(()=>{ if(!document.hidden) refrescar(); },6000);   // respaldo por si se corta el en vivo
 }
 async function refrescar(){
   if(!sb||!code||busy) return;
-  try{ const d=await rpc("pyq_leer",{p_codigo:code}); if(d&&(!st||d.v>st.v)&&!busy){ st=d; render(); } }catch(e){}
+  try{ const d=await rpc("pyq_leer",{p_codigo:code}); if(d&&(!st||d.v>st.v)&&!busy) recibir(d); }catch(e){}
 }
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) refrescar(); });
 
@@ -566,7 +602,7 @@ $("grid").onclick=e=>{
   const b=e.target.closest(".pl"); if(!b||b.disabled) return;
   const n=clone(st), g=curGroup(n), t=turnNow(n), name=n.pool[g].splice(+b.dataset.i,1)[0];
   n.picks.push({t,n:name,g});
-  commit(n).then(()=>{ if(curGroup(st)<0) toast("¡Equipos armados!"); });
+  commit(n).then(()=>{ if(curGroup(st)<0){ toast("¡Equipos armados!"); finalPitazo(); } });
 };
 $("undo").onclick=()=>{ const n=clone(st), p=n.picks.pop(); if(!p) return; n.pool[p.g].push(p.n); commit(n); };
 $("again").onclick=()=>{ if(!armar("again","Rearmar")) return;
@@ -582,9 +618,11 @@ function armar(id,txt){ const b=$(id); if(b.dataset.arm){ delete b.dataset.arm; 
   b.dataset.arm=1; b.textContent="¿Seguro? Tocá de nuevo"; setTimeout(()=>{delete b.dataset.arm;b.textContent=txt;},3000); return false; }
 $("copy2").onclick=()=>$("copy").click();
 $("copy").onclick=()=>{
-  const team=t=>(((st.capPos||[])[t]==null)?`- ${st.caps[t]} (C)\n`:"")+[0,1,2,3,4].map(g=>deEquipo(st,t,g).map(n=>`- ${n}${GS[g]?` (${GS[g]})`:""}`).join("\n")).filter(Boolean).join("\n");
+  // solo nombres, ordenados por posición (el capitán va en la suya)
+  const cp=st.capPos||[];
+  const team=t=>[...(cp[t]==null?[st.caps[t]]:[]),...[0,1,2,3,4].flatMap(g=>[...(cp[t]===g?[st.caps[t]]:[]),...st.picks.filter(p=>p.t===t&&p.g===g).map(p=>p.n)])].map(n=>`- ${n}`).join("\n");
   const rest=st.pool.flat();
-  const txt=`⚽ Equipos\n\n${emojiDe(colDe(st,0))} Equipo de ${st.caps[0]}\n${team(0)}\n\n${emojiDe(colDe(st,1))} Equipo de ${st.caps[1]}\n${team(1)}${rest.length?`\n\nSin elegir: ${rest.join(", ")}`:""}\n\nArmados con Pan y Queso de Materia Print 👉 ${URL_PUBLICA}`;
+  const txt=`⚽ Equipos\n\n${emojiDe(colDe(st,0))} Equipo de ${st.caps[0]}\n${team(0)}\n\n${emojiDe(colDe(st,1))} Equipo de ${st.caps[1]}\n${team(1)}${rest.length?`\n\nSin elegir: ${rest.join(", ")}`:""}\n\nPan y Queso: ${URL_PUBLICA}${code?"#"+code:""}`;
   const fb=()=>{ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");toast("Copiado.");}catch(e){toast("Seleccioná y copiá a mano.");} ta.remove(); };
   try{ navigator.clipboard.writeText(txt).then(()=>toast("Copiado. Pegalo en el grupo."),fb); }catch(e){ fb(); }
 };
