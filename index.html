@@ -177,7 +177,7 @@ footer a{color:var(--pitch);font-weight:700}
 
   <!-- PASO 1: lista -->
   <section class="card" id="setup" hidden>
-    <div class="paso"><i>1</i>Jugadores</div>
+    <div class="paso"><i>1</i>Jugadores<button class="btn ghost small" id="vaciar" type="button" style="margin-left:auto;font-family:var(--f-body);text-transform:none;letter-spacing:0">🗑️ Vaciar lista</button></div>
     <p class="muted" style="margin:0;font-size:14px">Uno por línea, <b>capitanes incluidos</b> (así se sabe en qué puesto juega cada uno).</p>
     <label class="chk"><input type="checkbox" id="chkPos" checked> Dividir por posición <span class="muted" id="posHint">(primero delanteros, después medios y defensores)</span></label>
     <div class="grp todos" id="boxTodos" hidden><label for="g0">Jugadores <span id="n0"></span></label><textarea id="g0" style="min-height:200px"></textarea></div>
@@ -485,9 +485,14 @@ function render(){
 }
 
 /* ---------- roles: el que crea elige quién es; el otro capitán entra con su link; el resto mira ---------- */
-const yoKey=()=>"pyq_yo_"+(code||"local");
-const miRol=()=>!code?"ambos":(lk(yoKey())||"mirar");
-const soyCreador=()=>!!(code&&lk("pyq_creado_"+code));
+/* El rol sale SOLO del link con que se entra (no se guarda en el celular):
+   #CODIGO-<ko> = el que creó el partido · #CODIGO-<k> = el capitán invitado · #CODIGO = espectador */
+let tok=null;
+const miRol=()=>{ if(!code) return "ambos"; if(!st||!tok) return "mirar";
+  if(tok===st.ko) return st.rolCreador||"0";
+  if(tok===st.k&&(st.invitado===0||st.invitado===1)) return String(st.invitado);
+  return "mirar"; };
+const soyCreador=()=>!!(code&&st&&tok&&tok===st.ko);
 let soySetup="0";
 function pintarSoy(){ $("soy").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.soy===soySetup));
   $("soy0").textContent=$("capA").value.trim()||"Capitán 1"; $("soy1").textContent=$("capB").value.trim()||"Capitán 2"; }
@@ -516,7 +521,7 @@ function renderSala(){
 }
 function tirar(){ const n=clone(st); n.fase="draft"; n.first=Math.random()<.5?0:1; commit(n); }
 $("moneda").onclick=tirar;
-$("monedaIgual").onclick=()=>{ ls(yoKey(),"ambos"); const n=clone(st); n.invitado=null; n.presentes=[true,true]; n.fase="draft"; n.first=Math.random()<.5?0:1; commit(n); };
+$("monedaIgual").onclick=()=>{ const n=clone(st); n.rolCreador="ambos"; n.invitado=null; n.presentes=[true,true]; n.fase="draft"; n.first=Math.random()<.5?0:1; commit(n); };
 
 /* ---------- acciones ---------- */
 $("go").onclick=async()=>{
@@ -531,10 +536,11 @@ $("go").onclick=async()=>{
   $("err").textContent="";
   ls("pyq_lista",JSON.stringify({a:capA,b:capB,c:colSetup,pos,arq,g:[0,1,2,3,4].map(i=>$("g"+i).value)}));
   const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],capPos,colores:[...colSetup],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:soySetup==="ambos"?[true,true]:[soySetup==="0",soySetup==="1"],
-    invitado:soySetup==="ambos"?null:(soySetup==="0"?1:0),k:Math.random().toString(36).slice(2,8),v:1};
+    invitado:soySetup==="ambos"?null:(soySetup==="0"?1:0),k:Math.random().toString(36).slice(2,8),
+    ko:Math.random().toString(36).slice(2,8),rolCreador:soySetup,v:1};
   if(sb){
     $("go").disabled=true;
-    try{ code=await rpc("pyq_crear",{p_estado:nuevo}); ls("pyq_creado_"+code,"1"); ls("pyq_yo_"+code,soySetup); history.replaceState(null,"","#"+code); st=nuevo; conectar(); }
+    try{ code=await rpc("pyq_crear",{p_estado:nuevo}); tok=nuevo.ko; history.replaceState(null,"","#"+code+"-"+tok); st=nuevo; conectar(); }
     catch(e){ toast("No se pudo crear el partido. ¿Hay internet?"); $("go").disabled=false; return; }
     $("go").disabled=false; render();
   } else { st=nuevo; ls("pyq_local",JSON.stringify(st)); render(); }
@@ -549,9 +555,13 @@ $("grid").onclick=e=>{
 $("undo").onclick=()=>{ const n=clone(st), p=n.picks.pop(); if(!p) return; n.pool[p.g].push(p.n); commit(n); };
 $("again").onclick=()=>{ if(!armar("again","Rearmar")) return;
   const n=clone(st); n.picks.sort((a,b)=>a.g-b.g).forEach(p=>n.pool[p.g].push(p.n)); n.picks=[]; n.first=Math.random()<.5?0:1; commit(n); };
-$("nuevo").onclick=()=>{ if(!armar("nuevo","Partido nuevo")) return;
+$("nuevo").onclick=()=>{ if(!armar("nuevo","Partido nuevo")) return; tok=null;
   code=null; st=null; if(canal){sb.removeChannel(canal);canal=null;} clearInterval(poll); $("live").hidden=true;
   history.replaceState(null,"",location.pathname); try{localStorage.removeItem("pyq_local")}catch(e){} $("g0").dataset.init=""; render(); scrollTo(0,0); };
+$("vaciar").onclick=()=>{ if(!armar("vaciar","🗑️ Vaciar lista")) return;
+  [0,1,2,3,4].forEach(i=>$("g"+i).value=""); $("chkPos").checked=true; $("chkArq").checked=false;
+  try{ localStorage.removeItem("pyq_lista"); }catch(e){}
+  $("err").textContent=""; vistaChecks(); counts(); opcionesCap(); $("g1").focus(); toast("Lista vacía. Cargá los jugadores de hoy."); };
 function armar(id,txt){ const b=$(id); if(b.dataset.arm){ delete b.dataset.arm; b.textContent=txt; return true; }
   b.dataset.arm=1; b.textContent="¿Seguro? Tocá de nuevo"; setTimeout(()=>{delete b.dataset.arm;b.textContent=txt;},3000); return false; }
 $("copy2").onclick=()=>$("copy").click();
@@ -565,7 +575,7 @@ $("copy").onclick=()=>{
 
 /* ---------- arranque ---------- */
 (async()=>{
-  const [h,tok]=location.hash.replace("#","").trim().split("-"); const hc=(h||"").toUpperCase();
+  const [h,tk]=location.hash.replace("#","").trim().split("-"); tok=tk||null; const hc=(h||"").toUpperCase();
   if(!sb){
     if(SUPABASE_KEY.includes("PEGAR-ACA")) setLive(false,"Modo un solo celular");
     $("go").textContent="Tirar la moneda y empezar"; $("go").nextElementSibling.hidden=true; $("soy").closest(".cap").hidden=true;
@@ -578,7 +588,6 @@ $("copy").onclick=()=>{
     const d=await rpc("pyq_leer",{p_codigo:code});
     if(!d){ aviso("Ese partido no existe o ya venció (duran 3 días). Armá uno nuevo."); code=null; history.replaceState(null,"",location.pathname); render(); return; }
     st=d;
-    if(tok&&tok===st.k&&(st.invitado===0||st.invitado===1)&&!lk(yoKey())) ls(yoKey(),String(st.invitado));   // entró con el link de capitán
     render(); conectar();
     const r=miRol();
     if((r==="0"||r==="1")&&st.fase==="sala"&&!(st.presentes||[])[+r]){ const n=clone(st); n.presentes=n.presentes||[false,false]; n.presentes[+r]=true; commit(n); }
