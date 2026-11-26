@@ -186,7 +186,7 @@ footer a{color:var(--pitch);font-weight:700}
     <div class="grp med"><label for="g2">Mediocampistas <span id="n2"></span></label><textarea id="g2"></textarea></div>
     <div class="grp def"><label for="g3">Defensores <span id="n3"></span></label><textarea id="g3"></textarea></div>
     </div>
-    <label class="chk"><input type="checkbox" id="chkArq"> Hay arqueros <span class="muted">(se reparten al final)</span></label>
+    <label class="chk" id="lblArq"><input type="checkbox" id="chkArq"> Hay arqueros <span class="muted">(se reparten al final)</span></label>
     <div class="grp arq" id="boxArq" hidden><label for="g4">Arqueros <span id="n4"></span></label><textarea id="g4" style="min-height:64px"></textarea></div>
     <div class="paso" style="margin-top:6px"><i>2</i>Capitanes</div>
     <div class="row">
@@ -324,7 +324,7 @@ function marcadorSetup(){ $("hA").textContent=$("capA").value.trim()||"Pan"; $("
 /* combos de capitán: salen todos los jugadores cargados, agrupados por posición */
 let capPend=null;
 function opcionesCap(){
-  const pos=$("chkPos").checked, arq=$("chkArq").checked;
+  const pos=$("chkPos").checked, arq=pos&&$("chkArq").checked;
   const grupos=[0,1,2,3,4].filter(i=>!((i===0&&pos)||(i>=1&&i<=3&&!pos)||(i===4&&!arq)));
   const todos=new Set(); grupos.forEach(i=>parse(i).forEach(n=>todos.add(n)));
   const prev=capPend||[$("capA").value,$("capB").value]; capPend=null;
@@ -426,12 +426,12 @@ async function commit(next){
 function parse(i){ const seen=new Set(); return $("g"+i).value.split(/\n|,/).map(x=>x.trim()).filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase())); }
 function counts(){ [0,1,2,3,4].forEach(i=>{ const k=parse(i).length; $("n"+i).textContent=k+(k===1?" jugador":" jugadores"); }); clearTimeout(counts.h); counts.h=setTimeout(opcionesCap,250); }
 ["g0","g1","g2","g3","g4"].forEach(id=>$(id).addEventListener("input",counts));
-function vistaChecks(){ const pos=$("chkPos").checked; $("posHint").hidden=!pos; $("boxPos").hidden=!pos; $("boxTodos").hidden=pos; $("boxArq").hidden=!$("chkArq").checked; }
+function vistaChecks(){ const pos=$("chkPos").checked; $("posHint").hidden=!pos; $("lblArq").hidden=!pos; $("boxPos").hidden=!pos; $("boxTodos").hidden=pos; $("boxArq").hidden=!(pos&&$("chkArq").checked); }
 $("chkPos").addEventListener("change",()=>{
   // al cambiar, pasa los nombres de un formato al otro para no tener que cargarlos de nuevo
   if(!$("chkPos").checked){ if(!$("g0").value.trim()) $("g0").value=[1,2,3].map(i=>$("g"+i).value.trim()).filter(Boolean).join("\n"); }
   else if(![1,2,3].some(i=>$("g"+i).value.trim())) $("g1").value=$("g0").value;
-  vistaChecks(); counts(); });
+  vistaChecks(); counts(); opcionesCap(); });
 $("chkArq").addEventListener("change",()=>{ vistaChecks(); opcionesCap(); });
 function showSetup(){
   $("setup").hidden=false; $("draft").hidden=true;
@@ -529,7 +529,7 @@ $("go").onclick=async()=>{
   const capA=$("capA").value, capB=$("capB").value;
   if(!capA||!capB){ $("err").textContent="Elegí los dos capitanes."; $(capA?"capB":"capA").focus(); return; }
   const out=new Set([capA.toLowerCase(),capB.toLowerCase()]);
-  const pos=$("chkPos").checked, arq=$("chkArq").checked;
+  const pos=$("chkPos").checked, arq=pos&&$("chkArq").checked;
   const usa=i=>!((i===0&&pos)||(i>=1&&i<=3&&!pos)||(i===4&&!arq));
   const pool=[0,1,2,3,4].map(i=>usa(i)?parse(i).filter(n=>!out.has(n.toLowerCase())):[]);
   const capPos=[capA,capB].map(c=>{ for(let i=0;i<5;i++) if(usa(i)&&parse(i).some(n=>n.toLowerCase()===c.toLowerCase())) return i; return null; });
