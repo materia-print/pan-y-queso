@@ -105,6 +105,10 @@ body.f-pasto .bar .btn.ghost,body.f-estadio .bar .btn.ghost{background:var(--car
 .camis .otro[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
 .camis .otro input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0}
 .camis .otro:focus-within{outline:3px solid var(--gol);outline-offset:2px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:600 14px var(--f-body);padding:8px 12px;border-radius:99px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--noche);border-color:var(--noche);color:var(--gol)}
+.rol{font-weight:700;font-size:14px;padding:6px 10px;border-radius:99px;background:var(--bg);border:1px solid var(--line)}
 .camis button:focus-visible{outline:3px solid var(--gol);outline-offset:2px}
 .paso{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-size:22px;text-transform:uppercase;letter-spacing:.03em}
 .paso i{font-style:normal;background:var(--noche);color:var(--gol);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:17px}
@@ -167,6 +171,8 @@ footer a{color:var(--pitch);font-weight:700}
       <div class="cap a"><label for="capA">Capitán 1</label><input id="capA" placeholder="Nombre" autocomplete="off"><div class="camis" id="camA" role="group" aria-label="Color del equipo 1"></div></div>
       <div class="cap b"><label for="capB">Capitán 2</label><input id="capB" placeholder="Nombre" autocomplete="off"><div class="camis" id="camB" role="group" aria-label="Color del equipo 2"></div></div>
     </div>
+    <div class="cap"><label>Vos sos</label><div class="seg" id="soy" role="group" aria-label="Vos sos">
+      <button type="button" data-soy="0" id="soy0">Capitán 1</button><button type="button" data-soy="1" id="soy1">Capitán 2</button><button type="button" data-soy="ambos">Elijo por los dos</button></div></div>
     <div class="paso" style="margin-top:6px"><i>2</i>Jugadores</div>
     <p class="muted" style="margin:0;font-size:14px">Uno por línea. Si un capitán está en la lista, se saca solo.</p>
     <div class="grp arq"><label for="g0">Arqueros <small class="muted" style="font-weight:500">(opcional)</small><span id="n0"></span></label><textarea id="g0" style="min-height:64px" placeholder="Si no hay, dejalo vacío"></textarea></div>
@@ -180,14 +186,15 @@ footer a{color:var(--pitch);font-weight:700}
 
   <!-- PASO 2: elección -->
   <section id="draft" hidden style="display:flex;flex-direction:column;gap:14px">
-    <div class="card code" id="codeBox" hidden>
-      <div><span class="muted" style="font-size:13px;font-weight:600">Código del partido</span><br><b id="code"></b></div>
-      <a class="btn wa small" id="share" target="_blank" rel="noopener">Mandar link por WhatsApp</a>
+    <div class="card" id="codeBox" hidden>
+      <div class="code"><div><span class="muted" style="font-size:13px;font-weight:600">Código del partido</span><br><b id="code"></b></div><span class="rol" id="rolTxt"></span></div>
+      <div class="bar">
+        <a class="btn wa small" id="shareCap" target="_blank" rel="noopener"></a>
+        <a class="btn ghost small" id="shareVer" target="_blank" rel="noopener">👀 Link para mirar</a>
+      </div>
     </div>
     <div class="card" id="sala" hidden>
-      <h2 style="font-size:24px">¿Quién sos?</h2>
-      <div class="row" id="quien"></div>
-      <button class="btn ghost small" type="button" data-yo="mirar" id="soloMiro">Solo miro</button>
+      <h2 style="font-size:24px">Previa</h2>
       <div id="presentes" style="display:flex;flex-direction:column;gap:4px;font-weight:600"></div>
       <button class="btn" id="moneda" type="button">🪙 Tirar la moneda</button>
       <button class="btn ghost small" id="monedaIgual" type="button" hidden>No espero: tiro igual y elijo por los dos</button>
@@ -198,12 +205,6 @@ footer a{color:var(--pitch);font-weight:700}
         <div class="team b"><h2><span class="dot"></span><span id="nB"></span></h2><span class="count" id="cB"></span><div id="tB"></div></div>
       </div>
       <div class="turn" id="turn"></div>
-    </div>
-    <div class="card" id="yoBox">
-      <div class="row" style="align-items:end">
-        <div class="cap"><label for="yo">Este celular es de</label><select id="yo"></select></div>
-        <p class="muted" style="margin:0;font-size:13px">Así cada uno solo puede tocar en su turno.</p>
-      </div>
     </div>
     <div class="card" id="poolBox">
       <div class="coin" id="coin" hidden></div>
@@ -376,7 +377,7 @@ function showSetup(){
   $("setup").hidden=false; $("draft").hidden=true;
   const p=JSON.parse(lk("pyq_lista")||"null");
   if(p&&!$("g0").dataset.init){ $("capA").value=p.a||""; $("capB").value=p.b||""; (p.g&&p.g.length===3?["",...p.g]:(p.g||[])).forEach((t,i)=>$("g"+i).value=t); }
-  $("g0").dataset.init=1; counts(); pintarCamis(); marcadorSetup();
+  $("g0").dataset.init=1; counts(); pintarCamis(); marcadorSetup(); pintarSoy();
 }
 function norm(s){ if(s&&s.pool&&s.pool.length===3){ s.pool.unshift([]); (s.picks||[]).forEach(p=>p.g++); } return s; }
 function render(){
@@ -387,21 +388,17 @@ function render(){
   $("hA").textContent=st.caps[0]; $("hB").textContent=st.caps[1]; ajustar();
   $("sc").textContent=st.fase==="sala"?"0:0":`${st.picks.filter(p=>!p.t).length+1}:${st.picks.filter(p=>p.t).length+1}`;
   const enSala=st.fase==="sala";
-  ["cancha","yoBox","poolBox","acciones"].forEach(id=>$(id).hidden=enSala);
+  ["cancha","poolBox","acciones"].forEach(id=>$(id).hidden=enSala);
   $("sala").hidden=!enSala;
   if(enSala){ renderSala(); return; }
-  $("codeBox").hidden=!code;
-  if(code){ $("code").textContent=code;
-    $("share").href="https://wa.me/?text="+encodeURIComponent(`⚽ Armemos los equipos: ${URL_PUBLICA}#${code}`); }
+  pintarLinks();
   $("nA").textContent=st.caps[0]; $("nB").textContent=st.caps[1];
   [0,1].forEach(t=>{
     const mine=st.picks.filter(p=>p.t===t);
     $(t?"tB":"tA").innerHTML=[0,1,2,3].map(g=>{ const ns=mine.filter(p=>p.g===g); return ns.length?`<h3>${GS[g]}</h3><ul>${ns.map(p=>`<li>${esc(p.n)}</li>`).join("")}</ul>`:""; }).join("");
     $(t?"cB":"cA").textContent=`${mine.length+1} con el capitán`;
   });
-  const yoKey="pyq_yo_"+(code||"local"), yo=lk(yoKey)||(code&&!lk("pyq_creado_"+code)?"mirar":"ambos"), sel=$("yo");
-  sel.innerHTML=`<option value="ambos">Elijo por los dos</option><option value="0">${esc(st.caps[0])}</option><option value="1">${esc(st.caps[1])}</option><option value="mirar">Solo miro</option>`;
-  sel.value=yo; sel.dataset.key=yoKey;
+  const yo=miRol();
   const g=curGroup(st), t=turnNow(st);
   $("steps").innerHTML=GR.map((n,i)=>!(st.pool[i].length||st.picks.some(p=>p.g===i))?"":`<span class="step ${i===g?"on":""} ${!st.pool[i].length&&i!==g?"done":""}">${n} · ${st.pool[i].length}</span>`).join("");
   if(g<0){
@@ -414,37 +411,46 @@ function render(){
     $("poolTit").textContent=`${GR[g]}: quedan ${st.pool[g].length}`;
     const puedo=!busy&&(yo==="ambos"||+yo===t);
     $("grid").innerHTML=st.pool[g].map((n,i)=>`<button class="pl" type="button" data-i="${i}" ${puedo?"":"disabled"}>${esc(n)}</button>`).join("");
-    $("wait").hidden=puedo; $("wait").textContent=yo==="mirar"?"Estás mirando. Si sos capitán, elegí tu nombre arriba.":`Esperando que elija ${st.caps[t]}…`;
+    $("wait").hidden=puedo; $("wait").textContent=yo==="mirar"?`👀 Estás mirando · elige ${st.caps[t]}`:`Esperando que elija ${st.caps[t]}…`;
   }
   $("coin").hidden=st.picks.length>0; $("coin").textContent=`🪙 Salió ${st.caps[st.first]}: arranca eligiendo`;
   const mira=yo==="mirar";
-  $("undo").disabled=!st.picks.length||busy||mira; $("again").disabled=busy||mira;
+  $("undo").hidden=$("again").hidden=mira; $("undo").disabled=!st.picks.length||busy; $("again").disabled=busy;
 }
 
-/* ---------- sala: esperar al otro capitán antes de la moneda ---------- */
+/* ---------- roles: el que crea elige quién es; el otro capitán entra con su link; el resto mira ---------- */
 const yoKey=()=>"pyq_yo_"+(code||"local");
-function renderSala(){
-  $("codeBox").hidden=!code;
-  if(code){ $("code").textContent=code;
-    $("share").href="https://wa.me/?text="+encodeURIComponent(`⚽ Armemos los equipos: ${URL_PUBLICA}#${code}`); }
-  const yo=lk(yoKey())||"", pres=st.presentes||[false,false];
-  $("quien").innerHTML=[0,1].map(i=>`<button class="btn ${yo===String(i)?"":"ghost"}" type="button" data-yo="${i}" style="${yo===String(i)?`background:var(--${i?"b":"a"});color:var(--${i?"b":"a"}-ink)`:""}">${esc(st.caps[i])}</button>`).join("");
-  $("soloMiro").className="btn small "+(yo==="mirar"?"":"ghost");
-  $("presentes").innerHTML=[0,1].map(i=>pres[i]?`<span>✅ ${esc(st.caps[i])} está listo</span>`:`<span class="muted">⏳ Esperando a ${esc(st.caps[i])}${code?" · mandale el link":""}</span>`).join("");
-  const soyCap=yo==="0"||yo==="1", ambos=pres[0]&&pres[1];
-  $("moneda").disabled=busy||!soyCap||!ambos;
-  $("moneda").textContent=!soyCap?"Elegí quién sos para seguir":ambos?"🪙 Tirar la moneda":`🪙 Moneda: esperando a ${st.caps[pres[0]?1:0]}`;
-  $("monedaIgual").hidden=!soyCap||ambos;
+const miRol=()=>!code?"ambos":(lk(yoKey())||"mirar");
+const soyCreador=()=>!!(code&&lk("pyq_creado_"+code));
+let soySetup="0";
+function pintarSoy(){ $("soy").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.soy===soySetup));
+  $("soy0").textContent=$("capA").value.trim()||"Capitán 1"; $("soy1").textContent=$("capB").value.trim()||"Capitán 2"; }
+$("soy").addEventListener("click",e=>{ const b=e.target.closest("[data-soy]"); if(!b) return; soySetup=b.dataset.soy; pintarSoy(); });
+["capA","capB"].forEach(id=>$(id).addEventListener("input",pintarSoy));
+function pintarLinks(){
+  $("codeBox").hidden=!code; if(!code) return;
+  $("code").textContent=code;
+  const r=miRol(); $("rolTxt").textContent=r==="mirar"?"👀 Estás mirando":r==="ambos"?"🎮 Elegís por los dos":`🎮 Sos ${st.caps[+r]}`;
+  const inv=st.invitado, puedeInvitar=soyCreador()&&(inv===0||inv===1);
+  $("shareCap").hidden=!puedeInvitar;
+  if(puedeInvitar){ $("shareCap").textContent=`📲 Link para ${st.caps[inv]} (capitán)`;
+    $("shareCap").href="https://wa.me/?text="+encodeURIComponent(`⚽ Sos capitán, entrá a elegir: ${URL_PUBLICA}#${code}-${st.k}`); }
+  $("shareVer").href="https://wa.me/?text="+encodeURIComponent(`⚽ Mirá en vivo cómo se arman los equipos: ${URL_PUBLICA}#${code}`);
 }
-$("sala").addEventListener("click",e=>{
-  const b=e.target.closest("[data-yo]"); if(!b||busy) return;
-  const v=b.dataset.yo; ls(yoKey(),v);
-  if((v==="0"||v==="1")&&!(st.presentes||[])[+v]){ const n=clone(st); n.presentes=n.presentes||[false,false]; n.presentes[+v]=true; commit(n); }
-  else render();
-});
+function renderSala(){
+  pintarLinks();
+  const yo=miRol(), pres=st.presentes||[false,false], ambos=pres[0]&&pres[1], mira=yo==="mirar";
+  $("presentes").innerHTML=[0,1].map(i=>pres[i]?`<span>✅ ${esc(st.caps[i])} está listo</span>`
+    :`<span class="muted">⏳ Esperando a ${esc(st.caps[i])}${soyCreador()?" · mandale su link":""}</span>`).join("");
+  $("moneda").hidden=mira; $("moneda").disabled=busy||!ambos;
+  $("moneda").textContent=ambos?"🪙 Tirar la moneda":`🪙 Moneda: esperando a ${st.caps[pres[0]?1:0]}`;
+  $("monedaIgual").hidden=mira||ambos||!soyCreador();
+  $("wait").hidden=true;
+  if(mira) $("presentes").insertAdjacentHTML("beforeend",`<span class="muted">👀 Estás mirando: cuando tiren la moneda vas a ver la elección en vivo.</span>`);
+}
 function tirar(){ const n=clone(st); n.fase="draft"; n.first=Math.random()<.5?0:1; commit(n); }
 $("moneda").onclick=tirar;
-$("monedaIgual").onclick=()=>{ ls(yoKey(),"ambos"); tirar(); };
+$("monedaIgual").onclick=()=>{ ls(yoKey(),"ambos"); const n=clone(st); n.invitado=null; n.presentes=[true,true]; n.fase="draft"; n.first=Math.random()<.5?0:1; commit(n); };
 
 /* ---------- acciones ---------- */
 $("go").onclick=async()=>{
@@ -454,10 +460,11 @@ $("go").onclick=async()=>{
   if(pool.flat().length<2){ $("err").textContent="Cargá al menos dos jugadores."; return; }
   $("err").textContent="";
   ls("pyq_lista",JSON.stringify({a:capA,b:capB,c:colSetup,g:[0,1,2,3].map(i=>$("g"+i).value)}));
-  const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],colores:[...colSetup],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:[true,false],v:1};
+  const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],colores:[...colSetup],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:soySetup==="ambos"?[true,true]:[soySetup==="0",soySetup==="1"],
+    invitado:soySetup==="ambos"?null:(soySetup==="0"?1:0),k:Math.random().toString(36).slice(2,8),v:1};
   if(sb){
     $("go").disabled=true;
-    try{ code=await rpc("pyq_crear",{p_estado:nuevo}); ls("pyq_creado_"+code,"1"); ls("pyq_yo_"+code,"0"); history.replaceState(null,"","#"+code); st=nuevo; conectar(); }
+    try{ code=await rpc("pyq_crear",{p_estado:nuevo}); ls("pyq_creado_"+code,"1"); ls("pyq_yo_"+code,soySetup); history.replaceState(null,"","#"+code); st=nuevo; conectar(); }
     catch(e){ toast("No se pudo crear el partido. ¿Hay internet?"); $("go").disabled=false; return; }
     $("go").disabled=false; render();
   } else { st=nuevo; ls("pyq_local",JSON.stringify(st)); render(); }
@@ -477,7 +484,6 @@ $("nuevo").onclick=()=>{ if(!armar("nuevo","Partido nuevo")) return;
   history.replaceState(null,"",location.pathname); try{localStorage.removeItem("pyq_local")}catch(e){} $("g0").dataset.init=""; render(); scrollTo(0,0); };
 function armar(id,txt){ const b=$(id); if(b.dataset.arm){ delete b.dataset.arm; b.textContent=txt; return true; }
   b.dataset.arm=1; b.textContent="¿Seguro? Tocá de nuevo"; setTimeout(()=>{delete b.dataset.arm;b.textContent=txt;},3000); return false; }
-$("yo").onchange=e=>{ ls(e.target.dataset.key,e.target.value); render(); };
 $("copy").onclick=()=>{
   const team=t=>[0,1,2,3].map(g=>st.picks.filter(p=>p.t===t&&p.g===g).map(p=>`- ${p.n} (${GS[g]})`).join("\n")).filter(Boolean).join("\n");
   const rest=st.pool.flat();
@@ -488,19 +494,23 @@ $("copy").onclick=()=>{
 
 /* ---------- arranque ---------- */
 (async()=>{
-  const h=location.hash.replace("#","").trim().toUpperCase();
+  const [h,tok]=location.hash.replace("#","").trim().split("-"); const hc=(h||"").toUpperCase();
   if(!sb){
     if(SUPABASE_KEY.includes("PEGAR-ACA")) setLive(false,"Modo un solo celular");
     $("go").textContent="Tirar la moneda y empezar"; $("go").nextElementSibling.hidden=true;
     try{ st=JSON.parse(lk("pyq_local")||"null"); }catch(e){}
     render(); return;
   }
-  if(!h){ render(); return; }
-  code=h; setLive(false,"Conectando…");
+  if(!hc){ render(); return; }
+  code=hc; setLive(false,"Conectando…");
   try{
     const d=await rpc("pyq_leer",{p_codigo:code});
     if(!d){ aviso("Ese partido no existe o ya venció (duran 3 días). Armá uno nuevo."); code=null; history.replaceState(null,"",location.pathname); render(); return; }
-    st=d; render(); conectar();
+    st=d;
+    if(tok&&tok===st.k&&(st.invitado===0||st.invitado===1)&&!lk(yoKey())) ls(yoKey(),String(st.invitado));   // entró con el link de capitán
+    render(); conectar();
+    const r=miRol();
+    if((r==="0"||r==="1")&&st.fase==="sala"&&!(st.presentes||[])[+r]){ const n=clone(st); n.presentes=n.presentes||[false,false]; n.presentes[+r]=true; commit(n); }
   }catch(e){ aviso("No se pudo conectar. Revisá internet y recargá la página."); setLive(false,"Sin conexión"); render(); }
 })();
 </script>
