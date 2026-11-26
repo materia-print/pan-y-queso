@@ -4,10 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Pan y Queso · Armá los equipos</title>
-<meta name="description" content="Armá los equipos del fútbol por posición, en vivo desde dos celulares. Gratis, por Materia Print.">
+<meta name="description" content="Armá los equipos del fútbol por posición, en vivo y en directo. Gratis, por Materia Print.">
 <meta property="og:title" content="Pan y Queso · Armá los equipos">
-<meta property="og:description" content="Los dos capitanes eligen en vivo, cada uno desde su celular.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⚽%3C/text%3E%3C/svg%3E">
+<meta property="og:description" content="Los capitanes eligen por turnos y todos lo ven en vivo.">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#111111">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pan y Queso">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:image" content="icons/icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.0/dist/umd/supabase.min.js"></script>
@@ -157,6 +165,9 @@ a.tablero:hover{filter:brightness(1.08)}
   .lado .tablero strong{font-size:26px}
   .ticker{display:none}
 }
+.instalar{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+#instalar{background:var(--noche);color:var(--gol);box-shadow:0 4px 0 #000}
+.instalar p{margin:0;font-size:14px;background:var(--card);padding:8px 12px;border-radius:10px;color:var(--ink)}
 /* footer simple */
 footer{text-align:center;color:var(--muted);font-size:14px;padding:6px 0 0;border:0;display:block}
 footer a{color:var(--pitch);font-weight:700}
@@ -169,7 +180,7 @@ footer a{color:var(--pitch);font-weight:700}
 <div class="wrap">
   <header class="hero">
     <h1 class="tab" aria-label="Pan y Queso"><span class="eq ea" id="hA">Pan</span><span class="sc" id="sc">0:0</span><span class="eq eb" id="hB">Queso</span></h1>
-    <p class="sub">Armá los equipos · en vivo desde dos celulares</p>
+    <p class="sub">Armá los equipos por turnos · cada capitán desde donde esté</p>
     <span class="live off" id="live" hidden><i></i><span id="liveTxt"></span></span>
   </header>
   <div class="ticker" id="ticker" aria-label="Auspiciantes"><div class="track" id="track"></div></div>
@@ -237,6 +248,10 @@ footer a{color:var(--pitch);font-weight:700}
     </div>
   </section>
 
+  <div class="instalar" id="instalarBox" hidden>
+    <button class="btn" id="instalar" type="button">📲 Instalar app</button>
+    <p class="muted" id="instalarIos" hidden>En iPhone: tocá <b>Compartir</b> <span aria-hidden="true">⬆️</span> y después <b>"Agregar a inicio"</b>.</p>
+  </div>
   <footer>Desarrollado por <a href="https://materia-print.com.ar" target="_blank" rel="noopener">materia-print</a></footer>
 </div>
 <!-- Auspiciantes: en compu a los costados, en celular como cartel que corre bajo el título -->
@@ -399,7 +414,7 @@ function conectar(){
   if(canal) sb.removeChannel(canal);
   canal=sb.channel("pyq-"+code).on("broadcast",{event:"estado"},({payload})=>{
     if(payload&&(!st||payload.v>st.v)&&!busy){ st=payload; render(); }
-  }).subscribe(s=>{ if(s==="SUBSCRIBED") setLive(true,"En vivo · los dos ven lo mismo"); });
+  }).subscribe(s=>{ if(s==="SUBSCRIBED") setLive(true,"En vivo y en directo"); });
   clearInterval(poll);
   poll=setInterval(()=>{ if(!document.hidden) refrescar(); },6000);   // respaldo por si se corta el en vivo
 }
@@ -507,6 +522,7 @@ function pintarLinks(){
   $("shareCap").hidden=!puedeInvitar;
   if(puedeInvitar){ $("shareCap").textContent=`📲 Link para ${st.caps[inv]} (capitán)`;
     $("shareCap").href="https://wa.me/?text="+encodeURIComponent(`⚽ Sos capitán, entrá a elegir: ${URL_PUBLICA}#${code}-${st.k}`); }
+  $("shareVer").hidden=r==="mirar";
   $("shareVer").href="https://wa.me/?text="+encodeURIComponent(`⚽ Mirá en vivo cómo se arman los equipos: ${URL_PUBLICA}#${code}`);
 }
 function renderSala(){
@@ -572,6 +588,18 @@ $("copy").onclick=()=>{
   const fb=()=>{ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");toast("Copiado.");}catch(e){toast("Seleccioná y copiá a mano.");} ta.remove(); };
   try{ navigator.clipboard.writeText(txt).then(()=>toast("Copiado. Pegalo en el grupo."),fb); }catch(e){ fb(); }
 };
+
+/* ---------- instalar como app ---------- */
+if("serviceWorker" in navigator && (location.protocol==="https:"||location.hostname==="localhost")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+(()=>{
+  const yaInstalada=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  if(yaInstalada) return;
+  let aviso=null;
+  addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); aviso=e; $("instalarBox").hidden=false; $("instalar").hidden=false; });
+  $("instalar").onclick=async()=>{ if(!aviso) return; aviso.prompt(); const r=await aviso.userChoice; aviso=null; if(r.outcome==="accepted") $("instalarBox").hidden=true; };
+  addEventListener("appinstalled",()=>{ $("instalarBox").hidden=true; toast("¡Listo! Ya la tenés en el celular."); });
+  if(/iphone|ipad|ipod/i.test(navigator.userAgent)){ $("instalarBox").hidden=false; $("instalar").hidden=true; $("instalarIos").hidden=false; }
+})();
 
 /* ---------- arranque ---------- */
 (async()=>{
