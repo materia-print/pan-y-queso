@@ -143,6 +143,8 @@ a.tablero:hover{filter:brightness(1.08)}
 .ticker{overflow:hidden;border-radius:12px;background:var(--noche);padding:6px;margin-top:-4px}
 .track{display:flex;gap:6px;width:max-content;animation:correr 28s linear infinite}
 .ticker .tablero{flex:0 0 auto;min-width:170px;padding:8px 12px}
+.ticker.estatico .track{animation:none;width:100%}
+.ticker.estatico .tablero{flex:1 1 0}
 .ticker:hover .track{animation-play-state:paused}
 @keyframes correr{to{transform:translateX(calc(-50% - 3px))}}
 @media (prefers-reduced-motion:reduce){.track{animation:none}.ticker{overflow-x:auto}}
@@ -248,16 +250,13 @@ footer a{color:var(--pitch);font-weight:700}
    Si quedan los valores de ejemplo, la página funciona igual pero solo en un celular. */
 const SUPABASE_URL = "https://vxmijowqzvxiztrspdrz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_mksDMdzuFJwAPeLM5Gyovw_g5knnWON";
-/* Auspiciantes: estos son de EJEMPLO (inventados). Reemplazalos por los reales cuando los tengas.
-   logo: archivo subido al repo (ej. "logos/la-tribuna.png"); si está vacío se muestra el nombre con sus colores.
-   lado: "izq" o "der" (en compu). En celular salen todos en el cartel que corre. */
+/* Auspiciantes (carteles de costado de cancha). Por ahora solo el de "¿Tu marca acá?".
+   Para sumar uno real, copiá la línea y cambiá los datos:
+   nombre / texto · fondo y letra (colores) · link (opcional, https://...) · logo (archivo subido al repo, ej. "logos/marca.png")
+   lado: "izq", "der" o "ambos" (en compu). En celular salen debajo del marcador (con 3 o más, van pasando). */
 const AUSPICIANTES = [
-  {nombre:"Cervecería La Tribuna", texto:"La del tercer tiempo",   fondo:"#7a1712", letra:"#ffd23f", link:"", logo:"", lado:"izq"},
-  {nombre:"Canchas El Potrero",    texto:"Fútbol 5 y 7 · Reservá", fondo:"#1f6b35", letra:"#ffffff", link:"", logo:"", lado:"izq"},
-  {nombre:"Pizzería Tercer Tiempo",texto:"Pedí después del partido",fondo:"#e8590c", letra:"#ffffff", link:"", logo:"", lado:"izq"},
-  {nombre:"Deportes Gol",          texto:"Botines y camisetas",     fondo:"#123f8c", letra:"#ffffff", link:"", logo:"", lado:"der"},
-  {nombre:"Bebidas Don Pepe",      texto:"Siempre bien frías",      fondo:"#111111", letra:"#7ee0ff", link:"", logo:"", lado:"der"},
-  {nombre:"¿Tu marca acá?",        texto:"Escribinos",              fondo:"#ffd23f", letra:"#0e2a17", link:"https://wa.me/5493543626280?text=Hola!%20Quiero%20auspiciar%20el%20Pan%20y%20Queso", logo:"", lado:"der"}
+  {nombre:"¿Tu marca acá?", texto:"Escribinos", fondo:"#ffd23f", letra:"#0e2a17",
+   link:"https://wa.me/5493543626280?text=Hola!%20Quiero%20auspiciar%20el%20Pan%20y%20Queso", logo:"", lado:"der"}
 ];
 /* Fondo de la página: "pasto" (pasto cortado en diagonal) o "estadio" (de noche con reflectores). */
 const FONDO = "pasto";
@@ -306,9 +305,12 @@ function pintarCamis(){
 document.addEventListener("click",e=>{   // cerrar el desplegable al tocar afuera
   if(popAbierto<0||!e.target.isConnected||e.target.closest(".camis")) return; popAbierto=-1; pintarCamis(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&popAbierto>=0){ popAbierto=-1; pintarCamis(); } });
-function ajustar(){ ["hA","hB"].forEach(id=>{ const el=$(id); let f=30; el.style.fontSize=f+"px";
-  while(el.scrollWidth>el.clientWidth&&f>14){ f--; el.style.fontSize=f+"px"; } }); }
-addEventListener("resize",ajustar);
+function ajustar(){ ["hA","hB"].forEach(id=>{   // achica la letra del nombre hasta que entre en el cartel
+  const el=$(id), r=document.createRange(), cs=getComputedStyle(el); let f=30; el.style.fontSize=f+"px";
+  const disp=()=>el.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  const ancho=()=>{ r.selectNodeContents(el); return r.getBoundingClientRect().width; };
+  while(ancho()>disp()&&f>14){ f--; el.style.fontSize=f+"px"; } }); }
+addEventListener("resize",ajustar); if(document.fonts) document.fonts.ready.then(ajustar);
 function marcadorSetup(){ $("hA").textContent=$("capA").value.trim()||"Pan"; $("hB").textContent=$("capB").value.trim()||"Queso"; $("sc").textContent="0:0"; ajustar(); }
 ["camA","camB"].forEach(id=>$(id).addEventListener("click",e=>{
   const ab=e.target.closest("[data-abrir]"); if(ab){ const i=+ab.dataset.abrir; popAbierto=popAbierto===i?-1:i; pintarCamis(); return; }
@@ -354,8 +356,10 @@ function opcionesCap(){
     if(a.texto){ const t=document.createElement("span"); t.textContent=a.texto; el.appendChild(t); }
     return el;
   };
-  AUSPICIANTES.forEach(a=>$(a.lado==="der"?"ladoD":"ladoI").appendChild(tablero(a)));
-  const tr=$("track"); [0,1].forEach(k=>AUSPICIANTES.forEach(a=>{ const el=tablero(a); if(k) el.setAttribute("aria-hidden","true"); tr.appendChild(el); }));
+  AUSPICIANTES.forEach(a=>{ if(a.lado!=="der") $("ladoI").appendChild(tablero(a)); if(a.lado==="der"||a.lado==="ambos") $("ladoD").appendChild(tablero(a)); });
+  const tr=$("track"), corre=AUSPICIANTES.length>=3;
+  $("ticker").classList.toggle("estatico",!corre);
+  (corre?[0,1]:[0]).forEach(k=>AUSPICIANTES.forEach(a=>{ const el=tablero(a); if(k) el.setAttribute("aria-hidden","true"); tr.appendChild(el); }));
   if(!AUSPICIANTES.length) $("ticker").hidden=true;
 })();
 
