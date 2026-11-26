@@ -96,20 +96,26 @@ body.f-pasto .bar .btn.ghost,body.f-estadio .bar .btn.ghost{background:var(--car
 .sc{font:800 44px/1 var(--f-display);color:var(--gol);text-shadow:0 0 10px rgba(255,210,63,.6);letter-spacing:.05em;font-variant-numeric:tabular-nums}
 .hero .sub{text-align:center;color:var(--gol);font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;margin:10px 0 0}
 .hero .live{display:flex;justify-content:center;color:#fff;margin-top:6px}
-/* camisetas: paleta de colores por equipo */
-.camis{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.camis button{width:28px;height:28px;border-radius:7px 7px 10px 10px;border:2px solid rgba(0,0,0,.18);background:var(--sw);cursor:pointer;padding:0}
-.camis button[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
-.camis .otro{position:relative;width:28px;height:28px;border-radius:7px 7px 10px 10px;border:2px solid rgba(0,0,0,.18);cursor:pointer;overflow:hidden;
-  background:conic-gradient(red,#ff0,lime,cyan,blue,#f0f,red)}
-.camis .otro[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
-.camis .otro input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0}
-.camis .otro:focus-within{outline:3px solid var(--gol);outline-offset:2px}
+/* color de cada equipo: botón "Cambiar color" que abre un desplegable */
+.camis{position:relative;margin-top:2px}
+.colbtn{display:flex;align-items:center;gap:6px;width:100%;white-space:nowrap;overflow:hidden;font:600 13px var(--f-body);color:var(--ink);background:var(--card);
+  border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer;text-align:left}
+.colbtn .sw,.pop .sw{width:18px;height:18px;border-radius:5px;background:var(--sw);border:1.5px solid rgba(0,0,0,.2);flex:0 0 auto}
+.colbtn .flecha{margin-left:auto;color:var(--muted);font-size:12px}
+.pop{position:absolute;z-index:6;top:calc(100% + 6px);left:0;width:min(250px,calc(100vw - 48px));background:var(--card);border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.22);padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+#camB .pop{left:auto;right:0}
+.pop button,.pop label{display:flex;align-items:center;gap:8px;font:500 14px var(--f-body);color:var(--ink);background:none;border:0;border-radius:8px;padding:7px 8px;cursor:pointer;text-align:left}
+.pop button:hover,.pop label:hover{background:var(--bg)}
+.pop [aria-pressed="true"]{background:var(--bg);font-weight:700}
+.pop label{grid-column:1/-1;border-top:1px solid var(--line);border-radius:0 0 8px 8px;margin-top:4px;padding-top:10px;position:relative}
+.pop label .sw{background:conic-gradient(red,#ff0,lime,cyan,blue,#f0f,red)}
+.pop input[type=color]{width:36px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;margin-left:auto;background:none;cursor:pointer}
+.colbtn:focus-visible,.pop button:focus-visible,.pop input:focus-visible{outline:3px solid var(--gol);outline-offset:2px}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg button{font:600 14px var(--f-body);padding:8px 12px;border-radius:99px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--noche);border-color:var(--noche);color:var(--gol)}
 .rol{font-weight:700;font-size:14px;padding:6px 10px;border-radius:99px;background:var(--bg);border:1px solid var(--line)}
-.camis button:focus-visible{outline:3px solid var(--gol);outline-offset:2px}
 .paso{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-size:22px;text-transform:uppercase;letter-spacing:.03em}
 .paso i{font-style:normal;background:var(--noche);color:var(--gol);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:17px}
 .cap input{border-width:2px;font-weight:600}
@@ -120,7 +126,10 @@ body.f-pasto .bar .btn.ghost,body.f-estadio .bar .btn.ghost{background:var(--car
 .grp label span:last-child{margin-left:auto}
 .grp .num{font-family:var(--f-display);font-size:18px;width:30px;height:30px;border-radius:8px 8px 12px 12px;background:var(--c);color:#fff;display:grid;place-items:center;flex:0 0 auto}
 .grp textarea{background:var(--card);border-color:color-mix(in srgb,var(--c) 30%,var(--line))}
-.grp.arq{--c:#7b3fbf} .grp.del{--c:var(--del)} .grp.med{--c:var(--med)} .grp.def{--c:var(--def)}
+.chk{display:flex;align-items:center;gap:8px;font-size:15px;cursor:pointer;flex-wrap:wrap}
+.chk input{width:20px;height:20px;accent-color:var(--pitch);margin:0}
+.chk .muted{font-weight:500;font-size:13px}
+.grp.todos{--c:var(--pitch)} .grp.arq{--c:#7b3fbf} .grp.del{--c:var(--del)} .grp.med{--c:var(--med)} .grp.def{--c:var(--def)}
 #go{background:var(--gol);color:var(--noche);font-family:var(--f-display);font-size:24px;text-transform:uppercase;letter-spacing:.04em;padding:12px 16px;box-shadow:0 4px 0 #c9a21d}
 #go:active{transform:translateY(2px);box-shadow:0 2px 0 #c9a21d}
 .step.on{background:var(--noche);border-color:var(--noche);color:var(--gol)}
@@ -158,7 +167,7 @@ footer a{color:var(--pitch);font-weight:700}
 <div class="wrap">
   <header class="hero">
     <h1 class="tab" aria-label="Pan y Queso"><span class="eq ea" id="hA">Pan</span><span class="sc" id="sc">0:0</span><span class="eq eb" id="hB">Queso</span></h1>
-    <p class="sub">Armá los equipos por posición · en vivo desde dos celulares</p>
+    <p class="sub">Armá los equipos · en vivo desde dos celulares</p>
     <span class="live off" id="live" hidden><i></i><span id="liveTxt"></span></span>
   </header>
   <div class="ticker" id="ticker" aria-label="Auspiciantes"><div class="track" id="track"></div></div>
@@ -175,10 +184,15 @@ footer a{color:var(--pitch);font-weight:700}
       <button type="button" data-soy="0" id="soy0">Capitán 1</button><button type="button" data-soy="1" id="soy1">Capitán 2</button><button type="button" data-soy="ambos">Elijo por los dos</button></div></div>
     <div class="paso" style="margin-top:6px"><i>2</i>Jugadores</div>
     <p class="muted" style="margin:0;font-size:14px">Uno por línea. Si un capitán está en la lista, se saca solo.</p>
-    <div class="grp arq"><label for="g0">Arqueros <small class="muted" style="font-weight:500">(opcional)</small><span id="n0"></span></label><textarea id="g0" style="min-height:64px" placeholder="Si no hay, dejalo vacío"></textarea></div>
+    <label class="chk"><input type="checkbox" id="chkPos" checked> Dividir por posición <span class="muted" id="posHint">(primero delanteros, después medios y defensores)</span></label>
+    <div class="grp todos" id="boxTodos" hidden><label for="g0">Jugadores <span id="n0"></span></label><textarea id="g0" style="min-height:200px"></textarea></div>
+    <div id="boxPos" style="display:flex;flex-direction:column;gap:10px">
     <div class="grp del"><label for="g1">Delanteros <span id="n1"></span></label><textarea id="g1"></textarea></div>
     <div class="grp med"><label for="g2">Mediocampistas <span id="n2"></span></label><textarea id="g2"></textarea></div>
     <div class="grp def"><label for="g3">Defensores <span id="n3"></span></label><textarea id="g3"></textarea></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="chkArq"> Hay arqueros <span class="muted">(se reparten al final)</span></label>
+    <div class="grp arq" id="boxArq" hidden><label for="g4">Arqueros <span id="n4"></span></label><textarea id="g4" style="min-height:64px"></textarea></div>
     <p class="err" id="err"></p>
     <button class="btn" id="go" type="button">Crear partido</button>
     <p class="muted" style="margin:0;font-size:14px">Después le mandás el link al otro capitán y, cuando entra, tiran la moneda.</p>
@@ -254,7 +268,7 @@ const URL_PUBLICA = location.origin + location.pathname;
 /* ========================== */
 
 const $=id=>document.getElementById(id);
-const GR=["Arqueros","Delanteros","Mediocampistas","Defensores"], GS=["ARQ","DEL","MED","DEF"];
+const GR=["Jugadores","Delanteros","Mediocampistas","Defensores","Arqueros"], GS=["","DEL","MED","DEF","ARQ"];   // 0 = sin dividir por posición
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clone=o=>JSON.parse(JSON.stringify(o));
 const lk=k=>{try{return localStorage.getItem(k)}catch(e){return null}}, ls=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
@@ -277,27 +291,37 @@ const rgb=h=>[1,3,5].map(k=>parseInt(h.substr(k,2),16));
 const emojiDe=h=>{ const c=rgb(h); let best=CAMISETAS[0],d=1e9;            // el emoji del color más parecido
   CAMISETAS.forEach(x=>{ const q=rgb(x[1]), dd=(c[0]-q[0])**2+(c[1]-q[1])**2+(c[2]-q[2])**2; if(dd<d){d=dd;best=x;} }); return best[2]; };
 let colSetup=(()=>{ try{ const p=JSON.parse(lk("pyq_lista")||"null"); if(p&&p.c&&hexOk(p.c[0])&&hexOk(p.c[1])) return p.c; }catch(e){} return [...DEF_COL]; })();
+let popAbierto=-1;
 function pintarCamis(){
-  [0,1].forEach(i=>{ $(i?"camB":"camA").innerHTML=CAMISETAS.map(([n,h])=>
-    `<button type="button" style="--sw:${h}" data-i="${i}" data-c="${h}" aria-label="${n}" title="${n}" aria-pressed="${colSetup[i]===h}"></button>`).join("")
-    + `<label class="otro" title="Otro color" aria-pressed="${!CAMISETAS.some(x=>x[1]===colSetup[i])}"><input type="color" data-i="${i}" value="${colSetup[i]}" aria-label="Elegir otro color"></label>`; });
+  [0,1].forEach(i=>{
+    const cur=colSetup[i];
+    $(i?"camB":"camA").innerHTML=
+      `<button type="button" class="colbtn" data-abrir="${i}" aria-expanded="${popAbierto===i}"><span class="sw" style="--sw:${cur}"></span>Cambiar color<span class="flecha">▾</span></button>`
+      +`<div class="pop" ${popAbierto===i?"":"hidden"}>`
+      +CAMISETAS.map(([n,h])=>`<button type="button" data-i="${i}" data-c="${h}" aria-pressed="${cur===h}"><span class="sw" style="--sw:${h}"></span>${n}</button>`).join("")
+      +`<label><span class="sw"></span>Otro color<input type="color" data-i="${i}" value="${cur}" aria-label="Elegir otro color"></label></div>`;
+  });
   aplicarColores(colSetup);
 }
+document.addEventListener("click",e=>{   // cerrar el desplegable al tocar afuera
+  if(popAbierto<0||!e.target.isConnected||e.target.closest(".camis")) return; popAbierto=-1; pintarCamis(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&popAbierto>=0){ popAbierto=-1; pintarCamis(); } });
 function ajustar(){ ["hA","hB"].forEach(id=>{ const el=$(id); let f=30; el.style.fontSize=f+"px";
   while(el.scrollWidth>el.clientWidth&&f>14){ f--; el.style.fontSize=f+"px"; } }); }
 addEventListener("resize",ajustar);
 function marcadorSetup(){ $("hA").textContent=$("capA").value.trim()||"Pan"; $("hB").textContent=$("capB").value.trim()||"Queso"; $("sc").textContent="0:0"; ajustar(); }
 ["camA","camB"].forEach(id=>$(id).addEventListener("click",e=>{
+  const ab=e.target.closest("[data-abrir]"); if(ab){ const i=+ab.dataset.abrir; popAbierto=popAbierto===i?-1:i; pintarCamis(); return; }
   const b=e.target.closest("button[data-c]"); if(!b) return;
   const i=+b.dataset.i, c=b.dataset.c, otro=1-i;
   if(colSetup[otro]===c) colSetup[otro]=colSetup[i];   // si elige el color del otro, se los cambian
-  colSetup[i]=c; pintarCamis();
+  colSetup[i]=c; popAbierto=-1; pintarCamis();
 }));
 ["capA","capB"].forEach(id=>$(id).addEventListener("input",marcadorSetup));
 /* selector libre: mientras se arrastra solo se pinta (no se redibuja, para no cerrar la rueda) */
 ["camA","camB"].forEach(id=>{
   $(id).addEventListener("input",e=>{ if(e.target.type!=="color") return; colSetup[+e.target.dataset.i]=e.target.value.toLowerCase(); aplicarColores(colSetup); });
-  $(id).addEventListener("change",e=>{ if(e.target.type==="color") pintarCamis(); });
+  $(id).addEventListener("change",e=>{ if(e.target.type==="color"){ popAbierto=-1; pintarCamis(); } });
 });
 
 /* ---------- auspiciantes ---------- */
@@ -320,7 +344,7 @@ function marcadorSetup(){ $("hA").textContent=$("capA").value.trim()||"Pan"; $("
 /* ---------- turnos ----------
    Grupo por grupo. Dentro del grupo se alterna. El grupo siguiente lo arranca el equipo con menos
    jugadores; si están parejos, el que eligió segundo en el grupo anterior. */
-function curGroup(s){ for(let g=0;g<4;g++) if(s.pool[g].length) return g; return -1; }
+function curGroup(s){ for(let g=0;g<5;g++) if(s.pool[g].length) return g; return -1; }
 function turnNow(s){
   const g=curGroup(s); if(g<0) return -1;
   let count=[0,0], starter=s.first, prev=null;
@@ -371,15 +395,27 @@ async function commit(next){
 
 /* ---------- pantallas ---------- */
 function parse(i){ const seen=new Set(); return $("g"+i).value.split(/\n|,/).map(x=>x.trim()).filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase())); }
-function counts(){ [0,1,2,3].forEach(i=>{ const k=parse(i).length; $("n"+i).textContent=(i===0&&!k)?"":k+(k===1?" jugador":" jugadores"); }); }
-["g0","g1","g2","g3"].forEach(id=>$(id).addEventListener("input",counts));
+function counts(){ [0,1,2,3,4].forEach(i=>{ const k=parse(i).length; $("n"+i).textContent=k+(k===1?" jugador":" jugadores"); }); }
+["g0","g1","g2","g3","g4"].forEach(id=>$(id).addEventListener("input",counts));
+function vistaChecks(){ const pos=$("chkPos").checked; $("posHint").hidden=!pos; $("boxPos").hidden=!pos; $("boxTodos").hidden=pos; $("boxArq").hidden=!$("chkArq").checked; }
+$("chkPos").addEventListener("change",()=>{
+  // al cambiar, pasa los nombres de un formato al otro para no tener que cargarlos de nuevo
+  if(!$("chkPos").checked){ if(!$("g0").value.trim()) $("g0").value=[1,2,3].map(i=>$("g"+i).value.trim()).filter(Boolean).join("\n"); }
+  else if(![1,2,3].some(i=>$("g"+i).value.trim())) $("g1").value=$("g0").value;
+  vistaChecks(); counts(); });
+$("chkArq").addEventListener("change",vistaChecks);
 function showSetup(){
   $("setup").hidden=false; $("draft").hidden=true;
   const p=JSON.parse(lk("pyq_lista")||"null");
-  if(p&&!$("g0").dataset.init){ $("capA").value=p.a||""; $("capB").value=p.b||""; (p.g&&p.g.length===3?["",...p.g]:(p.g||[])).forEach((t,i)=>$("g"+i).value=t); }
+  if(p&&!$("g0").dataset.init){ $("capA").value=p.a||""; $("capB").value=p.b||""; let g=p.g||[]; if(g.length===3) g=["",...g,""]; else if(g.length===4) g=["",g[1],g[2],g[3],g[0]];   // formatos viejos
+    g.forEach((t,i)=>$("g"+i).value=t||""); $("chkPos").checked=p.pos!==false; $("chkArq").checked=!!p.arq||!!(g[4]||"").trim(); }
+  vistaChecks();
   $("g0").dataset.init=1; counts(); pintarCamis(); marcadorSetup(); pintarSoy();
 }
-function norm(s){ if(s&&s.pool&&s.pool.length===3){ s.pool.unshift([]); (s.picks||[]).forEach(p=>p.g++); } return s; }
+function norm(s){
+  if(s&&s.pool&&s.pool.length===3){ s.pool=[[],...s.pool,[]]; (s.picks||[]).forEach(p=>p.g++); }
+  if(s&&s.pool&&s.pool.length===4){ s.pool=[[],s.pool[1],s.pool[2],s.pool[3],s.pool[0]]; (s.picks||[]).forEach(p=>p.g=p.g===0?4:p.g); }
+  return s; }
 function render(){
   st=norm(st);
   if(!st||(st.fase!=="draft"&&st.fase!=="sala")){ showSetup(); return; }
@@ -395,7 +431,7 @@ function render(){
   $("nA").textContent=st.caps[0]; $("nB").textContent=st.caps[1];
   [0,1].forEach(t=>{
     const mine=st.picks.filter(p=>p.t===t);
-    $(t?"tB":"tA").innerHTML=[0,1,2,3].map(g=>{ const ns=mine.filter(p=>p.g===g); return ns.length?`<h3>${GS[g]}</h3><ul>${ns.map(p=>`<li>${esc(p.n)}</li>`).join("")}</ul>`:""; }).join("");
+    $(t?"tB":"tA").innerHTML=[0,1,2,3,4].map(g=>{ const ns=mine.filter(p=>p.g===g); return ns.length?`${GS[g]?`<h3>${GS[g]}</h3>`:""}<ul>${ns.map(p=>`<li>${esc(p.n)}</li>`).join("")}</ul>`:""; }).join("");
     $(t?"cB":"cA").textContent=`${mine.length+1} con el capitán`;
   });
   const yo=miRol();
@@ -456,10 +492,11 @@ $("monedaIgual").onclick=()=>{ ls(yoKey(),"ambos"); const n=clone(st); n.invitad
 $("go").onclick=async()=>{
   const capA=$("capA").value.trim()||"Capitán 1", capB=$("capB").value.trim()||"Capitán 2";
   const out=new Set([capA.toLowerCase(),capB.toLowerCase()]);
-  const pool=[0,1,2,3].map(i=>parse(i).filter(n=>!out.has(n.toLowerCase())));
+  const pos=$("chkPos").checked, arq=$("chkArq").checked;
+  const pool=[0,1,2,3,4].map(i=>((i===0&&pos)||(i>=1&&i<=3&&!pos)||(i===4&&!arq))?[]:parse(i).filter(n=>!out.has(n.toLowerCase())));
   if(pool.flat().length<2){ $("err").textContent="Cargá al menos dos jugadores."; return; }
   $("err").textContent="";
-  ls("pyq_lista",JSON.stringify({a:capA,b:capB,c:colSetup,g:[0,1,2,3].map(i=>$("g"+i).value)}));
+  ls("pyq_lista",JSON.stringify({a:capA,b:capB,c:colSetup,pos,arq,g:[0,1,2,3,4].map(i=>$("g"+i).value)}));
   const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],colores:[...colSetup],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:soySetup==="ambos"?[true,true]:[soySetup==="0",soySetup==="1"],
     invitado:soySetup==="ambos"?null:(soySetup==="0"?1:0),k:Math.random().toString(36).slice(2,8),v:1};
   if(sb){
@@ -485,7 +522,7 @@ $("nuevo").onclick=()=>{ if(!armar("nuevo","Partido nuevo")) return;
 function armar(id,txt){ const b=$(id); if(b.dataset.arm){ delete b.dataset.arm; b.textContent=txt; return true; }
   b.dataset.arm=1; b.textContent="¿Seguro? Tocá de nuevo"; setTimeout(()=>{delete b.dataset.arm;b.textContent=txt;},3000); return false; }
 $("copy").onclick=()=>{
-  const team=t=>[0,1,2,3].map(g=>st.picks.filter(p=>p.t===t&&p.g===g).map(p=>`- ${p.n} (${GS[g]})`).join("\n")).filter(Boolean).join("\n");
+  const team=t=>[0,1,2,3,4].map(g=>st.picks.filter(p=>p.t===t&&p.g===g).map(p=>`- ${p.n}${GS[g]?` (${GS[g]})`:""}`).join("\n")).filter(Boolean).join("\n");
   const rest=st.pool.flat();
   const txt=`⚽ Equipos\n\n${emojiDe(colDe(st,0))} ${st.caps[0]} (cap.)\n${team(0)}\n\n${emojiDe(colDe(st,1))} ${st.caps[1]} (cap.)\n${team(1)}${rest.length?`\n\nSin elegir: ${rest.join(", ")}`:""}\n\nArmados con Pan y Queso de Materia Print 👉 ${URL_PUBLICA}`;
   const fb=()=>{ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");toast("Copiado.");}catch(e){toast("Seleccioná y copiá a mano.");} ta.remove(); };
@@ -497,7 +534,7 @@ $("copy").onclick=()=>{
   const [h,tok]=location.hash.replace("#","").trim().split("-"); const hc=(h||"").toUpperCase();
   if(!sb){
     if(SUPABASE_KEY.includes("PEGAR-ACA")) setLive(false,"Modo un solo celular");
-    $("go").textContent="Tirar la moneda y empezar"; $("go").nextElementSibling.hidden=true;
+    $("go").textContent="Tirar la moneda y empezar"; $("go").nextElementSibling.hidden=true; $("soy").closest(".cap").hidden=true;
     try{ st=JSON.parse(lk("pyq_local")||"null"); }catch(e){}
     render(); return;
   }
