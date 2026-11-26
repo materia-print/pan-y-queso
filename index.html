@@ -223,13 +223,13 @@ footer a{color:var(--pitch);font-weight:700}
     <div class="card" id="poolBox">
       <div class="coin" id="coin" hidden></div>
       <div class="steps" id="steps"></div>
-      <h2 style="font-size:22px" id="poolTit"></h2>
+      <div class="code"><h2 style="font-size:22px" id="poolTit"></h2><button class="btn wa small" id="copy2" type="button" hidden>📋 Copiar equipos</button></div>
       <div class="grid" id="grid"></div>
       <p class="muted" id="wait" style="margin:0;font-size:14px" hidden></p>
     </div>
     <div class="bar" id="acciones">
       <button class="btn ghost small" id="undo" type="button">Deshacer última</button>
-      <button class="btn ghost small" id="copy" type="button">Copiar equipos</button>
+      <button class="btn wa small" id="copy" type="button">📋 Copiar equipos</button>
       <button class="btn ghost small" id="again" type="button">Rearmar</button>
       <button class="btn ghost small" id="nuevo" type="button">Partido nuevo</button>
     </div>
@@ -347,10 +347,13 @@ function marcadorSetup(){ $("hA").textContent=$("capA").value.trim()||"Pan"; $("
 function curGroup(s){ for(let g=0;g<5;g++) if(s.pool[g].length) return g; return -1; }
 function turnNow(s){
   const g=curGroup(s); if(g<0) return -1;
-  let count=[0,0], starter=s.first, prev=null;
+  const cp=s.capPos||[null,null];
+  let count=[0,0], prev=null;
   for(let k=0;k<=g;k++){
     const pk=s.picks.filter(p=>p.g===k);
-    if(k===0) starter=s.first;
+    const yaTiene=[0,1].map(t=>cp[t]===k?1:0);   // el capitán cuenta como jugador de su posición
+    let starter;
+    if(yaTiene[0]!==yaTiene[1]) starter=yaTiene[0]<yaTiene[1]?0:1;   // arranca el que no tiene a su capitán en esa posición
     else if(count[0]!==count[1]) starter=count[0]<count[1]?0:1;
     else starter=prev===null?s.first:1-prev;
     if(k===g) return (starter+pk.length)%2;
@@ -359,6 +362,9 @@ function turnNow(s){
   }
   return -1;
 }
+const SING=["jugador","delantero","mediocampista","defensor","arquero"];
+/* jugadores de un equipo en una posición, con el capitán incluido en la suya */
+const deEquipo=(s,t,g)=>[...((s.capPos||[])[t]===g?[s.caps[t]+" (C)"]:[]),...s.picks.filter(p=>p.t===t&&p.g===g).map(p=>p.n)];
 
 /* ---------- servidor ---------- */
 function setLive(on,txt){ $("live").hidden=false; $("live").classList.toggle("off",!on); $("liveTxt").textContent=txt; }
@@ -431,16 +437,16 @@ function render(){
   $("nA").textContent=st.caps[0]; $("nB").textContent=st.caps[1];
   [0,1].forEach(t=>{
     const mine=st.picks.filter(p=>p.t===t);
-    $(t?"tB":"tA").innerHTML=[0,1,2,3,4].map(g=>{ const ns=mine.filter(p=>p.g===g); return ns.length?`${GS[g]?`<h3>${GS[g]}</h3>`:""}<ul>${ns.map(p=>`<li>${esc(p.n)}</li>`).join("")}</ul>`:""; }).join("");
+    $(t?"tB":"tA").innerHTML=[0,1,2,3,4].map(g=>{ const ns=deEquipo(st,t,g); return ns.length?`${GS[g]?`<h3>${GS[g]}</h3>`:""}<ul>${ns.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:""; }).join("");
     $(t?"cB":"cA").textContent=`${mine.length+1} con el capitán`;
   });
   const yo=miRol();
-  const g=curGroup(st), t=turnNow(st);
+  const g=curGroup(st), t=turnNow(st); $("copy2").hidden=true;
   $("steps").innerHTML=GR.map((n,i)=>!(st.pool[i].length||st.picks.some(p=>p.g===i))?"":`<span class="step ${i===g?"on":""} ${!st.pool[i].length&&i!==g?"done":""}">${n} · ${st.pool[i].length}</span>`).join("");
   if(g<0){
     $("turn").textContent=`Equipos listos · ${st.picks.filter(p=>!p.t).length+1} vs ${st.picks.filter(p=>p.t).length+1}`;
     $("turn").style.background="rgba(0,0,0,.35)"; $("turn").style.color="#fff";
-    $("poolTit").textContent="No queda nadie"; $("grid").innerHTML=""; $("wait").hidden=true;
+    $("poolTit").textContent="No queda nadie"; $("grid").innerHTML=""; $("wait").hidden=true; $("copy2").hidden=false;
   } else {
     $("turn").innerHTML=`<small>${GR[g]}</small>Elige <b>${esc(st.caps[t])}</b>`;
     $("turn").style.background=t?"var(--b)":"var(--a)"; $("turn").style.color=t?"var(--b-ink)":"var(--a-ink)";
@@ -449,7 +455,9 @@ function render(){
     $("grid").innerHTML=st.pool[g].map((n,i)=>`<button class="pl" type="button" data-i="${i}" ${puedo?"":"disabled"}>${esc(n)}</button>`).join("");
     $("wait").hidden=puedo; $("wait").textContent=yo==="mirar"?`👀 Estás mirando · elige ${st.caps[t]}`:`Esperando que elija ${st.caps[t]}…`;
   }
-  $("coin").hidden=st.picks.length>0; $("coin").textContent=`🪙 Salió ${st.caps[st.first]}: arranca eligiendo`;
+  $("coin").hidden=st.picks.length>0; { const t0=turnNow(st), g0=curGroup(st), o=1-st.first;
+    $("coin").textContent=(t0===st.first||t0<0)?`🪙 Salió ${st.caps[st.first]}: arranca eligiendo`
+      :`🪙 Salió ${st.caps[st.first]}, pero arranca ${st.caps[o]} porque ${st.caps[st.first]} ya es ${SING[g0]}`; }
   const mira=yo==="mirar";
   $("undo").hidden=$("again").hidden=mira; $("undo").disabled=!st.picks.length||busy; $("again").disabled=busy;
 }
@@ -493,11 +501,13 @@ $("go").onclick=async()=>{
   const capA=$("capA").value.trim()||"Capitán 1", capB=$("capB").value.trim()||"Capitán 2";
   const out=new Set([capA.toLowerCase(),capB.toLowerCase()]);
   const pos=$("chkPos").checked, arq=$("chkArq").checked;
-  const pool=[0,1,2,3,4].map(i=>((i===0&&pos)||(i>=1&&i<=3&&!pos)||(i===4&&!arq))?[]:parse(i).filter(n=>!out.has(n.toLowerCase())));
+  const usa=i=>!((i===0&&pos)||(i>=1&&i<=3&&!pos)||(i===4&&!arq));
+  const pool=[0,1,2,3,4].map(i=>usa(i)?parse(i).filter(n=>!out.has(n.toLowerCase())):[]);
+  const capPos=[capA,capB].map(c=>{ for(let i=0;i<5;i++) if(usa(i)&&parse(i).some(n=>n.toLowerCase()===c.toLowerCase())) return i; return null; });
   if(pool.flat().length<2){ $("err").textContent="Cargá al menos dos jugadores."; return; }
   $("err").textContent="";
   ls("pyq_lista",JSON.stringify({a:capA,b:capB,c:colSetup,pos,arq,g:[0,1,2,3,4].map(i=>$("g"+i).value)}));
-  const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],colores:[...colSetup],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:soySetup==="ambos"?[true,true]:[soySetup==="0",soySetup==="1"],
+  const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],capPos,colores:[...colSetup],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:soySetup==="ambos"?[true,true]:[soySetup==="0",soySetup==="1"],
     invitado:soySetup==="ambos"?null:(soySetup==="0"?1:0),k:Math.random().toString(36).slice(2,8),v:1};
   if(sb){
     $("go").disabled=true;
@@ -521,10 +531,11 @@ $("nuevo").onclick=()=>{ if(!armar("nuevo","Partido nuevo")) return;
   history.replaceState(null,"",location.pathname); try{localStorage.removeItem("pyq_local")}catch(e){} $("g0").dataset.init=""; render(); scrollTo(0,0); };
 function armar(id,txt){ const b=$(id); if(b.dataset.arm){ delete b.dataset.arm; b.textContent=txt; return true; }
   b.dataset.arm=1; b.textContent="¿Seguro? Tocá de nuevo"; setTimeout(()=>{delete b.dataset.arm;b.textContent=txt;},3000); return false; }
+$("copy2").onclick=()=>$("copy").click();
 $("copy").onclick=()=>{
-  const team=t=>[0,1,2,3,4].map(g=>st.picks.filter(p=>p.t===t&&p.g===g).map(p=>`- ${p.n}${GS[g]?` (${GS[g]})`:""}`).join("\n")).filter(Boolean).join("\n");
+  const team=t=>(((st.capPos||[])[t]==null)?`- ${st.caps[t]} (C)\n`:"")+[0,1,2,3,4].map(g=>deEquipo(st,t,g).map(n=>`- ${n}${GS[g]?` (${GS[g]})`:""}`).join("\n")).filter(Boolean).join("\n");
   const rest=st.pool.flat();
-  const txt=`⚽ Equipos\n\n${emojiDe(colDe(st,0))} ${st.caps[0]} (cap.)\n${team(0)}\n\n${emojiDe(colDe(st,1))} ${st.caps[1]} (cap.)\n${team(1)}${rest.length?`\n\nSin elegir: ${rest.join(", ")}`:""}\n\nArmados con Pan y Queso de Materia Print 👉 ${URL_PUBLICA}`;
+  const txt=`⚽ Equipos\n\n${emojiDe(colDe(st,0))} Equipo de ${st.caps[0]}\n${team(0)}\n\n${emojiDe(colDe(st,1))} Equipo de ${st.caps[1]}\n${team(1)}${rest.length?`\n\nSin elegir: ${rest.join(", ")}`:""}\n\nArmados con Pan y Queso de Materia Print 👉 ${URL_PUBLICA}`;
   const fb=()=>{ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");toast("Copiado.");}catch(e){toast("Seleccioná y copiá a mano.");} ta.remove(); };
   try{ navigator.clipboard.writeText(txt).then(()=>toast("Copiado. Pegalo en el grupo."),fb); }catch(e){ fb(); }
 };
