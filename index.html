@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pan y Queso · Armá los equipos</title>
+<meta name="description" content="Armá los equipos del fútbol por posición, en vivo desde dos celulares. Gratis, por Materia Print.">
+<meta property="og:title" content="Pan y Queso · Armá los equipos">
+<meta property="og:description" content="Los dos capitanes eligen en vivo, cada uno desde su celular.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⚽%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.0/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#eef3ec; --card:#ffffff; --ink:#18241b; --muted:#5d6b60; --line:#d3ddd2;
+  --pitch:#2f7d3e; --pitch2:#276b34; --a:#d9422b; --b:#1f5fbf; --wa:#1f9d55;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif; --f-body:"Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#111813;--card:#1a241d;--ink:#e9f0ea;--muted:#9aab9e;--line:#2c3a30;--pitch:#25633a;--pitch2:#1f5531;--a:#ff6b52;--b:#5b9bff;color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body);margin:0}
+a{color:inherit}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 32px;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.02em;margin:0;line-height:1}
+h1{font-size:40px}
+.sub{color:var(--muted);margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+label{font-weight:600;font-size:14px}
+textarea,input,select{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
+textarea{min-height:120px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cap{display:flex;flex-direction:column;gap:4px}
+.cap.a label{color:var(--a)} .cap.b label{color:var(--b)}
+.grp{display:flex;flex-direction:column;gap:4px}
+.grp label{display:flex;justify-content:space-between}
+.grp label span{color:var(--muted);font-weight:500}
+.btn{font:600 16px var(--f-body);border:0;border-radius:10px;padding:13px 16px;cursor:pointer;background:var(--pitch);color:#fff;text-decoration:none;text-align:center}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.wa{background:var(--wa)}
+.btn.small{padding:8px 12px;font-size:14px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible,.pl:focus-visible{outline:3px solid var(--b);outline-offset:2px}
+.muted{color:var(--muted)}
+.err{color:var(--a);font-weight:600;min-height:1.2em;margin:0}
+.note{font-size:14px;border-radius:8px;padding:8px 10px;margin:0;background:color-mix(in srgb,var(--a) 10%,var(--card));border:1px solid color-mix(in srgb,var(--a) 35%,var(--line))}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:600}
+.live i{width:8px;height:8px;border-radius:50%;background:#2fbf5b;display:inline-block}
+.live.off i{background:var(--muted)}
+.code{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.code b{font-family:var(--f-display);font-size:30px;letter-spacing:.12em}
+/* cancha */
+.pitch{background:repeating-linear-gradient(90deg,var(--pitch) 0 40px,var(--pitch2) 40px 80px);border-radius:12px;padding:14px;color:#fff;position:relative;overflow:hidden}
+.pitch::before{content:"";position:absolute;inset:8px;border:2px solid rgba(255,255,255,.55);border-radius:6px;pointer-events:none}
+.pitch::after{content:"";position:absolute;left:50%;top:8px;bottom:8px;border-left:2px solid rgba(255,255,255,.55);pointer-events:none}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:18px;position:relative}
+.team{min-width:0}
+.team h2{font-size:26px;display:flex;align-items:center;gap:8px;overflow-wrap:anywhere}
+.team .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;border:2px solid #fff}
+.team.a .dot{background:var(--a)} .team.b .dot{background:var(--b)}
+.team .count{font-size:13px;opacity:.85;font-weight:500}
+.team h3{font-size:14px;opacity:.8;margin-top:8px;letter-spacing:.06em}
+.team ul{margin:2px 0 0;padding:0;list-style:none;font-weight:600}
+.team li{padding:1px 0;overflow-wrap:anywhere}
+.turn{position:relative;margin-top:12px;background:rgba(0,0,0,.28);border-radius:8px;padding:8px 10px;font-weight:600;text-align:center}
+.turn b{font-family:var(--f-display);font-size:22px;letter-spacing:.03em}
+.turn small{display:block;font-weight:500;opacity:.9}
+.steps{display:flex;gap:6px;flex-wrap:wrap}
+.step{font:600 13px var(--f-body);padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.step.on{background:var(--pitch);border-color:var(--pitch);color:#fff}
+.step.done{text-decoration:line-through}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.pl{font:600 16px var(--f-body);text-align:left;padding:12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;min-width:0;overflow-wrap:anywhere}
+.pl:hover:not(:disabled){border-color:var(--pitch)}
+.pl:disabled{cursor:default;opacity:.55}
+.bar{display:flex;gap:8px;flex-wrap:wrap}
+.coin{font-family:var(--f-display);font-size:26px;text-align:center;padding:4px 0}
+/* auspiciante y pie */
+.spon{display:flex;align-items:center;gap:12px;text-decoration:none;border-style:dashed}
+.spon img{width:52px;height:52px;object-fit:contain;border-radius:8px;flex:0 0 auto}
+.spon small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.spon strong{display:block}
+.spon span{color:var(--muted);font-size:14px}
+footer{text-align:center;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:8px;align-items:center;padding-top:8px;border-top:1px solid var(--line)}
+footer strong{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;max-width:calc(100% - 32px);z-index:9}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <h1>Pan y Queso</h1>
+    <p class="sub">Se elige por posición: primero delanteros, después medios y al final defensores. Los dos capitanes lo ven en vivo.</p>
+    <span class="live off" id="live" hidden><i></i><span id="liveTxt"></span></span>
+  </header>
+  <p class="note" id="aviso" hidden></p>
+
+  <!-- PASO 1: lista -->
+  <section class="card" id="setup" hidden>
+    <div class="row">
+      <div class="cap a"><label for="capA">Capitán 1</label><input id="capA" placeholder="Nombre" autocomplete="off"></div>
+      <div class="cap b"><label for="capB">Capitán 2</label><input id="capB" placeholder="Nombre" autocomplete="off"></div>
+    </div>
+    <p class="muted" style="margin:0;font-size:14px">Un jugador por línea. Si un capitán está en la lista, se saca solo.</p>
+    <div class="grp"><label for="g0">Delanteros <span id="n0"></span></label><textarea id="g0"></textarea></div>
+    <div class="grp"><label for="g1">Mediocampistas <span id="n1"></span></label><textarea id="g1"></textarea></div>
+    <div class="grp"><label for="g2">Defensores <span id="n2"></span></label><textarea id="g2"></textarea></div>
+    <p class="err" id="err"></p>
+    <button class="btn" id="go" type="button">Crear partido</button>
+    <p class="muted" style="margin:0;font-size:14px">Después le mandás el link al otro capitán y, cuando entra, tiran la moneda.</p>
+  </section>
+
+  <!-- PASO 2: elección -->
+  <section id="draft" hidden style="display:flex;flex-direction:column;gap:14px">
+    <div class="card code" id="codeBox" hidden>
+      <div><span class="muted" style="font-size:13px;font-weight:600">Código del partido</span><br><b id="code"></b></div>
+      <a class="btn wa small" id="share" target="_blank" rel="noopener">Mandar link por WhatsApp</a>
+    </div>
+    <div class="card" id="sala" hidden>
+      <h2 style="font-size:24px">¿Quién sos?</h2>
+      <div class="row" id="quien"></div>
+      <button class="btn ghost small" type="button" data-yo="mirar" id="soloMiro">Solo miro</button>
+      <div id="presentes" style="display:flex;flex-direction:column;gap:4px;font-weight:600"></div>
+      <button class="btn" id="moneda" type="button">🪙 Tirar la moneda</button>
+      <button class="btn ghost small" id="monedaIgual" type="button" hidden>No espero: tiro igual y elijo por los dos</button>
+    </div>
+    <div class="pitch" id="cancha">
+      <div class="teams">
+        <div class="team a"><h2><span class="dot"></span><span id="nA"></span></h2><span class="count" id="cA"></span><div id="tA"></div></div>
+        <div class="team b"><h2><span class="dot"></span><span id="nB"></span></h2><span class="count" id="cB"></span><div id="tB"></div></div>
+      </div>
+      <div class="turn" id="turn"></div>
+    </div>
+    <div class="card" id="yoBox">
+      <div class="row" style="align-items:end">
+        <div class="cap"><label for="yo">Este celular es de</label><select id="yo"></select></div>
+        <p class="muted" style="margin:0;font-size:13px">Así cada uno solo puede tocar en su turno.</p>
+      </div>
+    </div>
+    <div class="card" id="poolBox">
+      <div class="coin" id="coin" hidden></div>
+      <div class="steps" id="steps"></div>
+      <h2 style="font-size:22px" id="poolTit"></h2>
+      <div class="grid" id="grid"></div>
+      <p class="muted" id="wait" style="margin:0;font-size:14px" hidden></p>
+    </div>
+    <div class="bar" id="acciones">
+      <button class="btn ghost small" id="undo" type="button">Deshacer última</button>
+      <button class="btn ghost small" id="copy" type="button">Copiar equipos</button>
+      <button class="btn ghost small" id="again" type="button">Rearmar</button>
+      <button class="btn ghost small" id="nuevo" type="button">Partido nuevo</button>
+    </div>
+  </section>
+
+  <!-- Auspiciante: se completa en AUSPICIANTE, más abajo -->
+  <a class="card spon" id="spon" target="_blank" rel="noopener">
+    <img id="sponImg" alt="" hidden>
+    <div><small>Auspicia</small><strong id="sponNom"></strong><span id="sponTxt"></span></div>
+  </a>
+
+  <footer>
+    <div>Hecho por <strong>Materia Print</strong> · Páginas web, turneros y diseño para tu negocio</div>
+    <a class="btn wa small" href="https://wa.me/5493543626280?text=Hola!%20Vi%20el%20Pan%20y%20Queso%20y%20quiero%20consultar" target="_blank" rel="noopener">Quiero una página para mi negocio</a>
+    <a href="https://materia-print.com.ar" target="_blank" rel="noopener">materia-print.com.ar</a>
+  </footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ===== CONFIGURACIÓN =====
+   SUPABASE: Project Settings > API. Va la clave "anon" / "publishable" (NUNCA la service_role / secret).
+   Si quedan los valores de ejemplo, la página funciona igual pero solo en un celular. */
+const SUPABASE_URL = "https://vxmijowqzvxiztrspdrz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_mksDMdzuFJwAPeLM5Gyovw_g5knnWON";
+/* Auspiciante: cambiá estos datos cuando tengas uno. logo puede ser "logo-auspiciante.png" subido al repo. */
+const AUSPICIANTE = {
+  nombre: "¿Tu negocio acá?",
+  texto:  "Lo ven todos los que arman su partido. Escribinos.",
+  link:   "https://wa.me/5493543626280?text=Hola!%20Quiero%20auspiciar%20el%20Pan%20y%20Queso",
+  logo:   ""
+};
+const URL_PUBLICA = location.origin + location.pathname;
+/* ========================== */
+
+const $=id=>document.getElementById(id);
+const GR=["Delanteros","Mediocampistas","Defensores"], GS=["DEL","MED","DEF"];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const lk=k=>{try{return localStorage.getItem(k)}catch(e){return null}}, ls=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+function toast(t){$("toast").textContent=t;$("toast").hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>$("toast").hidden=true,2400);}
+
+const online=!SUPABASE_KEY.includes("PEGAR-ACA") && window.supabase;
+const sb=online?supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false}}):null;
+let st=null, code=null, busy=false, canal=null, poll=null;
+
+/* ---------- auspiciante ---------- */
+(()=>{ const a=AUSPICIANTE; $("sponNom").textContent=a.nombre; $("sponTxt").textContent=" "+a.texto;
+  if(/^https:\/\//.test(a.link)) $("spon").href=a.link; else $("spon").removeAttribute("href");
+  if(a.logo){ $("sponImg").src=a.logo; $("sponImg").hidden=false; } })();
+
+/* ---------- turnos ----------
+   Grupo por grupo. Dentro del grupo se alterna. El grupo siguiente lo arranca el equipo con menos
+   jugadores; si están parejos, el que eligió segundo en el grupo anterior. */
+function curGroup(s){ for(let g=0;g<3;g++) if(s.pool[g].length) return g; return -1; }
+function turnNow(s){
+  const g=curGroup(s); if(g<0) return -1;
+  let count=[0,0], starter=s.first, prev=null;
+  for(let k=0;k<=g;k++){
+    const pk=s.picks.filter(p=>p.g===k);
+    if(k===0) starter=s.first;
+    else if(count[0]!==count[1]) starter=count[0]<count[1]?0:1;
+    else starter=prev===null?s.first:1-prev;
+    if(k===g) return (starter+pk.length)%2;
+    if(pk.length||s.pool[k].length) prev=starter;
+    pk.forEach(p=>count[p.t]++);
+  }
+  return -1;
+}
+
+/* ---------- servidor ---------- */
+function setLive(on,txt){ $("live").hidden=false; $("live").classList.toggle("off",!on); $("liveTxt").textContent=txt; }
+function aviso(t){ $("aviso").textContent=t||""; $("aviso").hidden=!t; }
+async function rpc(fn,args){ const {data,error}=await sb.rpc(fn,args); if(error) throw error; return data; }
+
+function conectar(){
+  if(!sb||!code) return;
+  if(canal) sb.removeChannel(canal);
+  canal=sb.channel("pyq-"+code).on("broadcast",{event:"estado"},({payload})=>{
+    if(payload&&(!st||payload.v>st.v)&&!busy){ st=payload; render(); }
+  }).subscribe(s=>{ if(s==="SUBSCRIBED") setLive(true,"En vivo · los dos ven lo mismo"); });
+  clearInterval(poll);
+  poll=setInterval(()=>{ if(!document.hidden) refrescar(); },6000);   // respaldo por si se corta el en vivo
+}
+async function refrescar(){
+  if(!sb||!code||busy) return;
+  try{ const d=await rpc("pyq_leer",{p_codigo:code}); if(d&&(!st||d.v>st.v)&&!busy){ st=d; render(); } }catch(e){}
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) refrescar(); });
+
+async function commit(next){
+  if(busy) return; busy=true;
+  const prev=st?st.v:0; next.v=prev+1; st=next; render();
+  if(sb&&code){
+    try{
+      const r=await rpc("pyq_guardar",{p_codigo:code,p_estado:next,p_prev:prev});
+      if(!r.ok){ st=r.estado; toast("El otro tocó primero, mirá cómo quedó."); }
+      else canal&&canal.send({type:"broadcast",event:"estado",payload:st});
+    }catch(e){ toast("Sin conexión, no se guardó. Probá de nuevo."); st.v=prev; await refrescar(); }
+  } else ls("pyq_local",JSON.stringify(next));
+  busy=false; render();
+}
+
+/* ---------- pantallas ---------- */
+function parse(i){ const seen=new Set(); return $("g"+i).value.split(/\n|,/).map(x=>x.trim()).filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase())); }
+function counts(){ [0,1,2].forEach(i=>$("n"+i).textContent=parse(i).length+" jugadores"); }
+["g0","g1","g2"].forEach(id=>$(id).addEventListener("input",counts));
+function showSetup(){
+  $("setup").hidden=false; $("draft").hidden=true;
+  const p=JSON.parse(lk("pyq_lista")||"null");
+  if(p&&!$("g0").dataset.init){ $("capA").value=p.a||""; $("capB").value=p.b||""; (p.g||[]).forEach((t,i)=>$("g"+i).value=t); }
+  $("g0").dataset.init=1; counts();
+}
+function render(){
+  if(!st||(st.fase!=="draft"&&st.fase!=="sala")){ showSetup(); return; }
+  $("setup").hidden=true; $("draft").hidden=false;
+  const enSala=st.fase==="sala";
+  ["cancha","yoBox","poolBox","acciones"].forEach(id=>$(id).hidden=enSala);
+  $("sala").hidden=!enSala;
+  if(enSala){ renderSala(); return; }
+  $("codeBox").hidden=!code;
+  if(code){ $("code").textContent=code;
+    $("share").href="https://wa.me/?text="+encodeURIComponent(`⚽ Armemos los equipos: ${URL_PUBLICA}#${code}`); }
+  $("nA").textContent=st.caps[0]; $("nB").textContent=st.caps[1];
+  [0,1].forEach(t=>{
+    const mine=st.picks.filter(p=>p.t===t);
+    $(t?"tB":"tA").innerHTML=[0,1,2].map(g=>{ const ns=mine.filter(p=>p.g===g); return ns.length?`<h3>${GS[g]}</h3><ul>${ns.map(p=>`<li>${esc(p.n)}</li>`).join("")}</ul>`:""; }).join("");
+    $(t?"cB":"cA").textContent=`${mine.length+1} con el capitán`;
+  });
+  const yoKey="pyq_yo_"+(code||"local"), yo=lk(yoKey)||(code&&!lk("pyq_creado_"+code)?"mirar":"ambos"), sel=$("yo");
+  sel.innerHTML=`<option value="ambos">Elijo por los dos</option><option value="0">${esc(st.caps[0])}</option><option value="1">${esc(st.caps[1])}</option><option value="mirar">Solo miro</option>`;
+  sel.value=yo; sel.dataset.key=yoKey;
+  const g=curGroup(st), t=turnNow(st);
+  $("steps").innerHTML=GR.map((n,i)=>`<span class="step ${i===g?"on":""} ${!st.pool[i].length&&i!==g?"done":""}">${n} · ${st.pool[i].length}</span>`).join("");
+  if(g<0){
+    $("turn").textContent=`Equipos listos · ${st.picks.filter(p=>!p.t).length+1} vs ${st.picks.filter(p=>p.t).length+1}`;
+    $("turn").style.background="rgba(0,0,0,.35)";
+    $("poolTit").textContent="No queda nadie"; $("grid").innerHTML=""; $("wait").hidden=true;
+  } else {
+    $("turn").innerHTML=`<small>${GR[g]}</small>Elige <b>${esc(st.caps[t])}</b>`;
+    $("turn").style.background=t?"color-mix(in srgb,var(--b) 75%,transparent)":"color-mix(in srgb,var(--a) 75%,transparent)";
+    $("poolTit").textContent=`${GR[g]}: quedan ${st.pool[g].length}`;
+    const puedo=!busy&&(yo==="ambos"||+yo===t);
+    $("grid").innerHTML=st.pool[g].map((n,i)=>`<button class="pl" type="button" data-i="${i}" ${puedo?"":"disabled"}>${esc(n)}</button>`).join("");
+    $("wait").hidden=puedo; $("wait").textContent=yo==="mirar"?"Estás mirando. Si sos capitán, elegí tu nombre arriba.":`Esperando que elija ${st.caps[t]}…`;
+  }
+  $("coin").hidden=st.picks.length>0; $("coin").textContent=`🪙 Salió ${st.caps[st.first]}: arranca eligiendo`;
+  const mira=yo==="mirar";
+  $("undo").disabled=!st.picks.length||busy||mira; $("again").disabled=busy||mira;
+}
+
+/* ---------- sala: esperar al otro capitán antes de la moneda ---------- */
+const yoKey=()=>"pyq_yo_"+(code||"local");
+function renderSala(){
+  $("codeBox").hidden=!code;
+  if(code){ $("code").textContent=code;
+    $("share").href="https://wa.me/?text="+encodeURIComponent(`⚽ Armemos los equipos: ${URL_PUBLICA}#${code}`); }
+  const yo=lk(yoKey())||"", pres=st.presentes||[false,false];
+  $("quien").innerHTML=[0,1].map(i=>`<button class="btn ${yo===String(i)?"":"ghost"}" type="button" data-yo="${i}" style="${yo===String(i)?`background:var(--${i?"b":"a"})`:""}">${esc(st.caps[i])}</button>`).join("");
+  $("soloMiro").className="btn small "+(yo==="mirar"?"":"ghost");
+  $("presentes").innerHTML=[0,1].map(i=>pres[i]?`<span>✅ ${esc(st.caps[i])} está listo</span>`:`<span class="muted">⏳ Esperando a ${esc(st.caps[i])}${code?" · mandale el link":""}</span>`).join("");
+  const soyCap=yo==="0"||yo==="1", ambos=pres[0]&&pres[1];
+  $("moneda").disabled=busy||!soyCap||!ambos;
+  $("moneda").textContent=!soyCap?"Elegí quién sos para seguir":ambos?"🪙 Tirar la moneda":`🪙 Moneda: esperando a ${st.caps[pres[0]?1:0]}`;
+  $("monedaIgual").hidden=!soyCap||ambos;
+}
+$("sala").addEventListener("click",e=>{
+  const b=e.target.closest("[data-yo]"); if(!b||busy) return;
+  const v=b.dataset.yo; ls(yoKey(),v);
+  if((v==="0"||v==="1")&&!(st.presentes||[])[+v]){ const n=clone(st); n.presentes=n.presentes||[false,false]; n.presentes[+v]=true; commit(n); }
+  else render();
+});
+function tirar(){ const n=clone(st); n.fase="draft"; n.first=Math.random()<.5?0:1; commit(n); }
+$("moneda").onclick=tirar;
+$("monedaIgual").onclick=()=>{ ls(yoKey(),"ambos"); tirar(); };
+
+/* ---------- acciones ---------- */
+$("go").onclick=async()=>{
+  const capA=$("capA").value.trim()||"Capitán 1", capB=$("capB").value.trim()||"Capitán 2";
+  const out=new Set([capA.toLowerCase(),capB.toLowerCase()]);
+  const pool=[0,1,2].map(i=>parse(i).filter(n=>!out.has(n.toLowerCase())));
+  if(pool.flat().length<2){ $("err").textContent="Cargá al menos dos jugadores."; return; }
+  $("err").textContent="";
+  ls("pyq_lista",JSON.stringify({a:capA,b:capB,g:[0,1,2].map(i=>$("g"+i).value)}));
+  const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:[true,false],v:1};
+  if(sb){
+    $("go").disabled=true;
+    try{ code=await rpc("pyq_crear",{p_estado:nuevo}); ls("pyq_creado_"+code,"1"); ls("pyq_yo_"+code,"0"); history.replaceState(null,"","#"+code); st=nuevo; conectar(); }
+    catch(e){ toast("No se pudo crear el partido. ¿Hay internet?"); $("go").disabled=false; return; }
+    $("go").disabled=false; render();
+  } else { st=nuevo; ls("pyq_local",JSON.stringify(st)); render(); }
+  scrollTo(0,0);
+};
+$("grid").onclick=e=>{
+  const b=e.target.closest(".pl"); if(!b||b.disabled) return;
+  const n=clone(st), g=curGroup(n), t=turnNow(n), name=n.pool[g].splice(+b.dataset.i,1)[0];
+  n.picks.push({t,n:name,g});
+  commit(n).then(()=>{ if(curGroup(st)<0) toast("¡Equipos armados!"); });
+};
+$("undo").onclick=()=>{ const n=clone(st), p=n.picks.pop(); if(!p) return; n.pool[p.g].push(p.n); commit(n); };
+$("again").onclick=()=>{ if(!armar("again","Rearmar")) return;
+  const n=clone(st); n.picks.sort((a,b)=>a.g-b.g).forEach(p=>n.pool[p.g].push(p.n)); n.picks=[]; n.first=Math.random()<.5?0:1; commit(n); };
+$("nuevo").onclick=()=>{ if(!armar("nuevo","Partido nuevo")) return;
+  code=null; st=null; if(canal){sb.removeChannel(canal);canal=null;} clearInterval(poll); $("live").hidden=true;
+  history.replaceState(null,"",location.pathname); try{localStorage.removeItem("pyq_local")}catch(e){} $("g0").dataset.init=""; render(); scrollTo(0,0); };
+function armar(id,txt){ const b=$(id); if(b.dataset.arm){ delete b.dataset.arm; b.textContent=txt; return true; }
+  b.dataset.arm=1; b.textContent="¿Seguro? Tocá de nuevo"; setTimeout(()=>{delete b.dataset.arm;b.textContent=txt;},3000); return false; }
+$("yo").onchange=e=>{ ls(e.target.dataset.key,e.target.value); render(); };
+$("copy").onclick=()=>{
+  const team=t=>[0,1,2].map(g=>st.picks.filter(p=>p.t===t&&p.g===g).map(p=>`- ${p.n} (${GS[g]})`).join("\n")).filter(Boolean).join("\n");
+  const rest=st.pool.flat();
+  const txt=`⚽ Equipos\n\n🔴 ${st.caps[0]} (cap.)\n${team(0)}\n\n🔵 ${st.caps[1]} (cap.)\n${team(1)}${rest.length?`\n\nSin elegir: ${rest.join(", ")}`:""}\n\nArmados con Pan y Queso de Materia Print 👉 ${URL_PUBLICA}`;
+  const fb=()=>{ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");toast("Copiado.");}catch(e){toast("Seleccioná y copiá a mano.");} ta.remove(); };
+  try{ navigator.clipboard.writeText(txt).then(()=>toast("Copiado. Pegalo en el grupo."),fb); }catch(e){ fb(); }
+};
+
+/* ---------- arranque ---------- */
+(async()=>{
+  const h=location.hash.replace("#","").trim().toUpperCase();
+  if(!sb){
+    if(SUPABASE_KEY.includes("PEGAR-ACA")) setLive(false,"Modo un solo celular");
+    $("go").textContent="Tirar la moneda y empezar"; $("go").nextElementSibling.hidden=true;
+    try{ st=JSON.parse(lk("pyq_local")||"null"); }catch(e){}
+    render(); return;
+  }
+  if(!h){ render(); return; }
+  code=h; setLive(false,"Conectando…");
+  try{
+    const d=await rpc("pyq_leer",{p_codigo:code});
+    if(!d){ aviso("Ese partido no existe o ya venció (duran 3 días). Armá uno nuevo."); code=null; history.replaceState(null,"",location.pathname); render(); return; }
+    st=d; render(); conectar();
+  }catch(e){ aviso("No se pudo conectar. Revisá internet y recargá la página."); setLive(false,"Sin conexión"); render(); }
+})();
+</script>
+</body>
+</html>
