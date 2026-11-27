@@ -83,7 +83,10 @@ textarea{min-height:120px;resize:vertical}
 .pl:hover:not(:disabled){border-color:var(--pitch)}
 .pl:disabled{cursor:default;opacity:.55}
 .bar{display:flex;gap:8px;flex-wrap:wrap}
-.coin{font-family:var(--f-display);font-size:26px;text-align:center;padding:4px 0}
+.coin{font-family:var(--f-display);font-size:24px;text-align:center;padding:4px 0;display:grid;gap:6px}
+.coin svg{width:100%;height:auto;display:block;background:color-mix(in srgb,var(--pitch) 12%,var(--card));border-radius:10px}
+.talle{display:flex;align-items:center;gap:8px;font-weight:600}
+.talle select{width:auto;padding:6px 8px}
 /* ===== look futbolero ===== */
 :root{--gol:#ffd23f;--noche:#0e2a17;--del:#e8590c;--med:#2f9e44;--def:#1c64c4}
 /* fondos: se elige con FONDO en la configuración ("pasto" o "estadio") */
@@ -223,8 +226,11 @@ footer a{color:var(--pitch);font-weight:700}
     <div class="card" id="sala" hidden>
       <h2 style="font-size:24px">Previa</h2>
       <div id="presentes" style="display:flex;flex-direction:column;gap:4px;font-weight:600"></div>
-      <button class="btn" id="moneda" type="button">🪙 Tirar la moneda</button>
-      <button class="btn ghost small" id="monedaIgual" type="button" hidden>No espero: tiro igual y elijo por los dos</button>
+      <div class="cap"><label>¿Cómo se decide quién arranca?</label><div class="seg" id="modo" role="group" aria-label="Cómo se decide quién arranca">
+        <button type="button" data-modo="pyq">🦶 Pan y queso</button><button type="button" data-modo="moneda">🪙 Moneda</button></div></div>
+      <div id="talles" style="display:grid;gap:6px"></div>
+      <button class="btn" id="moneda" type="button">🦶 ¡Pan y queso!</button>
+      <button class="btn ghost small" id="monedaIgual" type="button" hidden>No espero: sorteo y elijo por los dos</button>
     </div>
     <div class="pitch" id="cancha">
       <div class="teams">
@@ -431,6 +437,8 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden) document
 function recibir(d){
   const antes=st; st=d; render();
   if(!antes||st.fase!=="draft") return;
+  if(antes.fase!=="draft"){   // recién sorteado: con pan y queso avisa la animación; con moneda, acá
+    const me=miRol(); if(!st.pyq){ if((me==="0"||me==="1")&&turnNow(st)===+me) teToca(); else silbato(); } return; }   // al pasar de la previa a elegir avisa la animación del pan y queso
   const r=miRol(), soyCap=r==="0"||r==="1";
   const tAntes=antes.fase==="draft"?turnNow(norm(clone(antes))):-2, tAhora=turnNow(st);
   if(tAhora<0&&tAntes>=0){ finalPitazo(); return; }                 // se terminó de elegir
@@ -525,13 +533,20 @@ function render(){
     $("turn").innerHTML=`<small>${GR[g]}</small>Elige <b>${esc(st.caps[t])}</b>`;
     $("turn").style.background=t?"var(--b)":"var(--a)"; $("turn").style.color=t?"var(--b-ink)":"var(--a-ink)";
     $("poolTit").textContent=`${GR[g]}: quedan ${st.pool[g].length}`;
-    const puedo=!busy&&(yo==="ambos"||+yo===t);
+    const puedo=!busy&&!anim&&(yo==="ambos"||+yo===t);
     $("grid").innerHTML=st.pool[g].map((n,i)=>`<button class="pl" type="button" data-i="${i}" ${puedo?"":"disabled"}>${esc(n)}</button>`).join("");
     $("wait").hidden=puedo; $("wait").textContent=yo==="mirar"?`👀 Estás mirando · elige ${st.caps[t]}`:`Esperando que elija ${st.caps[t]}…`;
   }
-  $("coin").hidden=st.picks.length>0; { const t0=turnNow(st), g0=curGroup(st), o=1-st.first;
-    $("coin").textContent=(t0===st.first||t0<0)?`🪙 Salió ${st.caps[st.first]}: arranca eligiendo`
-      :`🪙 Salió ${st.caps[st.first]}, pero arranca ${st.caps[o]} porque ${st.caps[st.first]} ya es ${SING[g0]}`; }
+  $("coin").hidden=st.picks.length>0;
+  if(!st.picks.length){
+    const r=st.pyq, t0=turnNow(st), g0=curGroup(st), w=st.first, o=1-w;
+    const txt=(t0===w||t0<0)?`Pisó ${st.caps[w]}: arranca eligiendo`:`Pisó ${st.caps[w]}, pero arranca ${st.caps[o]} porque ${st.caps[w]} ya es ${SING[g0]}`;
+    if(r){ if(!anim&&!visto(r.id)) animarPyq();
+      const n=anim?anim.n:r.pasos.length;
+      $("coin").innerHTML=dibujoPyq(r,n,!!anim)+`<div>${anim?"Pan y queso…":"🦶 "+esc(txt)}</div>`; }
+    else $("coin").textContent=`🪙 Salió ${st.caps[w]}: arranca eligiendo`;
+  }
+  if(anim){ $("turn").textContent="🦶 Pan y queso…"; $("turn").style.background="rgba(0,0,0,.35)"; $("turn").style.color="#fff"; $("wait").hidden=true; }
   const mira=yo==="mirar";
   $("undo").hidden=$("again").hidden=mira; $("undo").disabled=!st.picks.length||busy; $("again").disabled=busy;
 }
@@ -566,15 +581,69 @@ function renderSala(){
   const yo=miRol(), pres=st.presentes||[false,false], ambos=pres[0]&&pres[1], mira=yo==="mirar";
   $("presentes").innerHTML=[0,1].map(i=>pres[i]?`<span>✅ ${esc(st.caps[i])} está listo</span>`
     :`<span class="muted">⏳ Esperando a ${esc(st.caps[i])}${soyCreador()?" · mandale su link":""}</span>`).join("");
+  $("talles").innerHTML=[0,1].map(i=>{ const mio=yo==="ambos"||yo===String(i);
+    return `<label class="talle"><span style="color:var(--${i?"b":"a"})">🦶 ${esc(st.caps[i])}</span> talle `
+      +(mio?`<select data-i="${i}" ${busy?"disabled":""}>${TALLES.map(t=>`<option ${t===talleDe(st,i)?"selected":""}>${t}</option>`).join("")}</select>`:`<b>${talleDe(st,i)}</b>`)+`</label>`; }).join("");
+  const md=modoDe(st), ic=md==="pyq"?"🦶":"🪙";
+  $("modo").querySelectorAll("button").forEach(b=>{ b.setAttribute("aria-pressed",b.dataset.modo===md); b.disabled=mira||busy; });
+  $("talles").hidden=md!=="pyq";
   $("moneda").hidden=mira; $("moneda").disabled=busy||!ambos;
-  $("moneda").textContent=ambos?"🪙 Tirar la moneda":`🪙 Moneda: esperando a ${st.caps[pres[0]?1:0]}`;
+  $("moneda").textContent=ambos?(md==="pyq"?"🦶 ¡Pan y queso!":"🪙 Tirar la moneda"):`${ic} Esperando a ${st.caps[pres[0]?1:0]}`;
   $("monedaIgual").hidden=mira||ambos||!soyCreador();
   $("wait").hidden=true;
-  if(mira) $("presentes").insertAdjacentHTML("beforeend",`<span class="muted">👀 Estás mirando: cuando tiren la moneda vas a ver la elección en vivo.</span>`);
+  if(mira) $("presentes").insertAdjacentHTML("beforeend",`<span class="muted">👀 Estás mirando: cuando sorteen quién arranca vas a ver la elección en vivo.</span>`);
 }
-function tirar(){ const n=clone(st); n.fase="draft"; n.first=Math.random()<.5?0:1; commit(n); }
-$("moneda").onclick=tirar;
-$("monedaIgual").onclick=()=>{ const n=clone(st); n.rolCreador="ambos"; n.invitado=null; n.presentes=[true,true]; n.fase="draft"; n.first=Math.random()<.5?0:1; commit(n); };
+/* ---------- pan y queso: pie contra pie hasta que uno pisa al otro ----------
+   Cada pie mide según el talle (talle 42 ≈ 28 cm). Arranca uno al azar y avanzan de a un pie;
+   el que ya no entra en el espacio que queda, pisa al otro y gana: elige primero. */
+const TALLES=Array.from({length:14},(_,i)=>34+i);
+const largo=t=>t*2/3;
+const talleDe=(s,i)=>((s.talles||[])[i])||41;
+function sortearPyq(s){
+  const D=Math.round(170+Math.random()*130); let a=0,b=D,t=Math.random()<.5?0:1; const pasos=[];
+  for(let k=0;k<80;k++){ const L=largo(talleDe(s,t)), hueco=b-a;
+    if(L>=hueco){ pasos.push({t,x:t?b:a,L,pisa:true}); return {id:Math.random().toString(36).slice(2,8),D,pasos,gana:t}; }
+    pasos.push({t,x:t?b:a,L}); if(t) b-=L; else a+=L; t=1-t; }
+}
+const modoDe=s=>s.modo==="moneda"?"moneda":"pyq";
+function tirar(n){ n=n||clone(st); n.fase="draft";
+  if(modoDe(n)==="pyq"){ n.pyq=sortearPyq(n); n.first=n.pyq.gana; } else { n.pyq=null; n.first=Math.random()<.5?0:1; }
+  commit(n).then(()=>{ if(!st.pyq) silbato(); }); }
+$("modo").addEventListener("click",e=>{ const b=e.target.closest("[data-modo]"); if(!b||busy||modoDe(st)===b.dataset.modo) return;
+  const n=clone(st); n.modo=b.dataset.modo; commit(n); });
+$("moneda").onclick=()=>tirar();
+$("monedaIgual").onclick=()=>{ const n=clone(st); n.rolCreador="ambos"; n.invitado=null; n.presentes=[true,true]; tirar(n); };
+$("talles").addEventListener("change",e=>{ const sel=e.target.closest("select[data-i]"); if(!sel||busy) return;
+  const n=clone(st); n.talles=[talleDe(n,0),talleDe(n,1)]; n.talles[+sel.dataset.i]=+sel.value; commit(n); });
+/* dibujo: cada pie es un palito "/_" (pierna inclinada + suela) del color de su equipo */
+function dibujoPyq(r,hasta,animando){
+  const D=r.D, pasos=r.pasos.slice(0,hasta);
+  const pies=pasos.map((p,i)=>{
+    const c=p.t?"var(--b)":"var(--a)", dir=p.t?-1:1, x2=p.x+dir*p.L, nuevo=animando&&i===pasos.length-1;
+    // el pie nuevo aparece levantado (punta arriba) y baja girando sobre el talón hasta quedar apoyado
+    const baja=nuevo?`<animateTransform attributeName="transform" type="rotate" from="${-dir*38} ${p.x} 0" to="0 ${p.x} 0" dur=".38s" fill="freeze" calcMode="spline" keySplines=".3 0 .4 1" keyTimes="0;1"/>`:"";
+    const pie=`<line x1="${p.x}" y1="0" x2="${x2}" y2="0" stroke="${c}" stroke-width="7" stroke-linecap="round" opacity="${nuevo||p.pisa||i>=pasos.length-2?1:.55}">${baja}</line>`;
+    const rot=(p.pisa?`<text x="${(p.x+x2)/2}" y="-22" text-anchor="middle" font-size="14" font-weight="800" fill="${c}">¡PISÓ!</text>`
+      :i===pasos.length-1?`<text x="${(p.x+x2)/2}" y="-22" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">${i%2?"QUESO":"PAN"}</text>`:"");
+    return pie+rot;
+  }).join("");
+  return `<svg viewBox="-14 -40 ${D+28} 58" role="img" aria-label="Pan y queso">
+    <line x1="-10" y1="5" x2="${D+10}" y2="5" stroke="currentColor" stroke-opacity=".25" stroke-width="1"/>${pies}
+    <text x="0" y="16" font-size="9" font-weight="700" fill="var(--a)">${esc(st.caps[0])} · ${talleDe(st,0)}</text>
+    <text x="${D}" y="16" text-anchor="end" font-size="9" font-weight="700" fill="var(--b)">${talleDe(st,1)} · ${esc(st.caps[1])}</text></svg>`;
+}
+let anim=null;   // animación en curso {id,n}
+const visto=id=>{ try{ return sessionStorage.getItem("pyq_anim_"+id)==="1"; }catch(e){ return false; } };
+function animarPyq(){
+  const r=st.pyq; if(!r||anim||visto(r.id)) return;
+  anim={id:r.id,n:0};
+  const paso=()=>{ if(!st.pyq||st.pyq.id!==anim.id){ anim=null; render(); return; }
+    anim.n++; tic(); render();
+    if(anim.n<r.pasos.length) setTimeout(paso,520);
+    else setTimeout(()=>{ try{ sessionStorage.setItem("pyq_anim_"+r.id,"1"); }catch(e){} anim=null; silbato(); render();
+      const me=miRol(); if((me==="0"||me==="1")&&turnNow(st)===+me) teToca(); },900); };
+  setTimeout(paso,300);
+}
 
 /* ---------- acciones ---------- */
 $("go").onclick=async()=>{
@@ -587,7 +656,7 @@ $("go").onclick=async()=>{
   const capPos=[capA,capB].map(c=>{ for(let i=0;i<5;i++) if(usa(i)&&parse(i).some(n=>n.toLowerCase()===c.toLowerCase())) return i; return null; });
   if(pool.flat().length<2){ $("err").textContent="Cargá al menos dos jugadores."; return; }
   $("err").textContent="";
-  const nuevo={fase:sb?"sala":"draft",caps:[capA,capB],capPos,colores:[...colSetup],pool,picks:[],first:sb?null:(Math.random()<.5?0:1),presentes:soySetup==="ambos"?[true,true]:[soySetup==="0",soySetup==="1"],
+  const nuevo={fase:"sala",talles:[41,41],caps:[capA,capB],capPos,colores:[...colSetup],pool,picks:[],first:null,presentes:(!sb||soySetup==="ambos")?[true,true]:[soySetup==="0",soySetup==="1"],
     invitado:soySetup==="ambos"?null:(soySetup==="0"?1:0),k:Math.random().toString(36).slice(2,8),
     ko:Math.random().toString(36).slice(2,8),rolCreador:soySetup,v:1};
   if(sb){
@@ -606,7 +675,7 @@ $("grid").onclick=e=>{
 };
 $("undo").onclick=()=>{ const n=clone(st), p=n.picks.pop(); if(!p) return; n.pool[p.g].push(p.n); commit(n); };
 $("again").onclick=()=>{ if(!armar("again","Rearmar")) return;
-  const n=clone(st); n.picks.sort((a,b)=>a.g-b.g).forEach(p=>n.pool[p.g].push(p.n)); n.picks=[]; n.first=Math.random()<.5?0:1; commit(n); };
+  const n=clone(st); n.picks.sort((a,b)=>a.g-b.g).forEach(p=>n.pool[p.g].push(p.n)); n.picks=[]; n.pyq=null; n.fase="sala"; n.presentes=[true,true]; commit(n); };
 $("nuevo").onclick=()=>{ if(!armar("nuevo","Partido nuevo")) return; tok=null;
   code=null; st=null; if(canal){sb.removeChannel(canal);canal=null;} clearInterval(poll); $("live").hidden=true;
   history.replaceState(null,"",location.pathname); try{localStorage.removeItem("pyq_local")}catch(e){} $("g0").dataset.init=""; render(); scrollTo(0,0); };
@@ -644,7 +713,7 @@ if("serviceWorker" in navigator && (location.protocol==="https:"||location.hostn
   const [h,tk]=location.hash.replace("#","").trim().split("-"); tok=tk||null; const hc=(h||"").toUpperCase();
   if(!sb){
     if(SUPABASE_KEY.includes("PEGAR-ACA")) setLive(false,"Modo un solo celular");
-    $("go").textContent="Tirar la moneda y empezar"; $("go").nextElementSibling.hidden=true; $("soy").closest(".cap").hidden=true;
+    $("go").textContent="Empezar"; $("go").nextElementSibling.hidden=true; $("soy").closest(".cap").hidden=true;
     try{ st=JSON.parse(lk("pyq_local")||"null"); }catch(e){}
     render(); return;
   }
